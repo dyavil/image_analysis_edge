@@ -1,2 +1,5 @@
 bin/*
 CMakeFiles/*
+Makefile
+CMakeCache.txt
+TP-Ch1-Sept-2017.pdf
