@@ -67,7 +67,7 @@ cv::Mat Convolution::applyToRGB(const cv::Mat & img) {
                 for(int j = -midH; j < midH + 1; ++j) {
                     cv::Vec3b pixel = cv::Vec3b(0, 0, 0);
                     if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
-                        pixel = img.at<cv::Vec3b>(x+i, y+j);
+                        pixel = img.at<cv::Vec3b>(y+j, x+i);
                     }
                     float c = conv[i + midW][j + midH];
                     
@@ -85,7 +85,7 @@ cv::Mat Convolution::applyToRGB(const cv::Mat & img) {
             green /= coeff;
             red /= coeff;
               
-            ret.at<cv::Vec3b>(x, y) =  cv::Vec3b(blue, green, red);    
+            ret.at<cv::Vec3b>(y, x) =  cv::Vec3b(blue, green, red);    
         }
     }
     

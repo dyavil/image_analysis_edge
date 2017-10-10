@@ -11,7 +11,7 @@ enum Color { gray = 0, rgb };   // Image en niveau de gris ou couleurs
 cv::Mat detectContours(cv::Mat & img, Color col);
 
 // Indique si un pixel d'une image binaire possède un voisin
-bool hasNeighbor(const cv::Mat & img, int x, int y);
+bool hasNeighbor(const cv::Mat & img, uchar seuil, unsigned int x, unsigned int y);
 
 // Applique l'hystérésis sur une image en niveaux de gris
 cv::Mat hysteresis (const cv::Mat & img, uchar seuilBas = 5, uchar seuilHaut = 10);

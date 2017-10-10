@@ -18,19 +18,15 @@ int main(int argc, char ** argv){
     cv::Mat imgDst3;
     cv::Mat imgDst4;
     
-    // Convolution
-    std::vector<std::vector<float>> filter = { {1, 1, 1}, {0, 0, 0}, {-1, -1, -1} };
-    Convolution conv(filter, 3, 3);
-    
     // Traitements
-    imgDst1 = conv.applyToRGB(lenaRGB);
+    imgDst1 = detectContours(imgTest, rgb);
     imgDst2 = detectContours(lenaRGB, rgb);
     imgDst3 = detectContours(lenaGray, gray);
     imgDst4 = hysteresis(imgDst3, 80, 100);
     
     // Affichage
-    //cv::namedWindow("filtre_vertical", cv::WINDOW_AUTOSIZE);
-    //cv::imshow("filtre_vertical", imgDst1);
+    cv::namedWindow("test", cv::WINDOW_AUTOSIZE);
+    cv::imshow("test", imgDst1);
     
     cv::namedWindow("contoursRGB", cv::WINDOW_AUTOSIZE);
     cv::imshow("contoursRGB", imgDst2);
