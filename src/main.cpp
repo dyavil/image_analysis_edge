@@ -11,12 +11,16 @@ int main(int argc, char ** argv){
     cv::Mat imgDst2;
     cv::Mat imgDst3;
     cv::Mat imgDst4;
+    cv::Mat imgDst5;
+    cv::Mat imgDst6;
     
     // Traitements
     imgDst1 = detectContours(imgTest, rgb);
     imgDst2 = detectContours(lenaRGB, rgb);
     imgDst3 = detectContours(lenaGray, gray);
+    imgDst5 = detectContours(lenaGray, gray, true);
     imgDst4 = hysteresis(imgDst3, 80, 100);
+    imgDst6 = hysteresis(imgDst5, 80, 100);
     
     // Affichage
     cv::namedWindow("test", cv::WINDOW_AUTOSIZE);
@@ -30,6 +34,9 @@ int main(int argc, char ** argv){
     
     cv::namedWindow("hysteresisGray", cv::WINDOW_AUTOSIZE);
     cv::imshow("hysteresisGray", imgDst4);
+
+    cv::namedWindow("hysteresisThin", cv::WINDOW_AUTOSIZE);
+    cv::imshow("hysteresisThin", imgDst6);
     
     cv::waitKey();
 

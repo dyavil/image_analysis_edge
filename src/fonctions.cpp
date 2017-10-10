@@ -1,9 +1,9 @@
 #include "fonctions.hpp"
 
 // Detecte les contours d'un image
-cv::Mat detectContours(cv::Mat & img, Color col) {
+cv::Mat detectContours(cv::Mat & img, Color col, bool thin) {
     
-    cv::Mat imgV, imgH;
+    cv::Mat imgV, imgH, imgVt, imgHt;
     cv::Mat ret = img.clone();
     
     // Filtre de Prewitt
@@ -16,8 +16,17 @@ cv::Mat detectContours(cv::Mat & img, Color col) {
     switch(col) {
     
         case gray:
-            imgV = convV.applyToGray(img);
-            imgH = convH.applyToGray(img);
+            if (thin)
+            {
+                imgVt = convV.applyToGray(img);
+                ThinVertical(imgVt, imgV);
+                imgHt = convH.applyToGray(img);
+                ThinHorizontal(imgHt, imgH);
+            }
+            else {
+                imgV = convV.applyToGray(img);
+                imgH = convH.applyToGray(img);
+            }
             
             for(int y = 0; y < img.rows; ++y) {
                 for(int x = 0; x < img.cols; ++x) {
@@ -90,3 +99,60 @@ cv::Mat hysteresis (const cv::Mat & img, uchar seuilBas, uchar seuilHaut) {
     
     return ret;
 }
+
+
+void ThinVertical(cv::Mat & pSrc, cv::Mat & pDst) {
+        int rows = pSrc.rows;
+        int cols = pSrc.cols;
+        pDst = pSrc.clone();
+        for(int i = 0; i < rows; i++) {
+                for(int j = 0; j < cols; j++) {
+                        if(pSrc.at<uchar>(i, j) != 0) {
+                                /// 8 voisins
+                                
+                                int neighbor0 = (int) pSrc.at<uchar>(i-1, j-1);
+                                int neighbor1 = (int) pSrc.at<uchar>(i-1, j);
+                                int neighbor2 = (int) pSrc.at<uchar>(i-1, j+1);
+                                int neighbor3 = (int) pSrc.at<uchar>(i, j+1);;
+                                int neighbor4 = (int) pSrc.at<uchar>(i+1, j+1);;
+                                int neighbor5 = (int) pSrc.at<uchar>(i+1, j);;
+                                int neighbor6 = (int) pSrc.at<uchar>(i+1, j-1);;
+                                int neighbor7 = (int) pSrc.at<uchar>(i, j-1);;
+                                int c1 = pSrc.at<uchar>(i, j) - neighbor7;
+                                int c2 = pSrc.at<uchar>(i, j) - neighbor3;
+                                if(c1 < 0 || c2 < 0)  {
+                                    pDst.at<uchar>(i, j) = 0;
+                                    //std::cout << "test" << std::endl;
+                                }
+                        }
+                }
+        }
+} 
+
+void ThinHorizontal(cv::Mat & pSrc, cv::Mat & pDst) {
+        int rows = pSrc.rows;
+        int cols = pSrc.cols;
+        pDst = pSrc.clone();
+        for(int i = 0; i < rows; i++) {
+                for(int j = 0; j < cols; j++) {
+                        if(pSrc.at<uchar>(i, j) != 0) {
+                                /// 8 voisins
+                                
+                                int neighbor0 = (int) pSrc.at<uchar>(i-1, j-1);
+                                int neighbor1 = (int) pSrc.at<uchar>(i-1, j);
+                                int neighbor2 = (int) pSrc.at<uchar>(i-1, j+1);
+                                int neighbor3 = (int) pSrc.at<uchar>(i, j+1);;
+                                int neighbor4 = (int) pSrc.at<uchar>(i+1, j+1);;
+                                int neighbor5 = (int) pSrc.at<uchar>(i+1, j);;
+                                int neighbor6 = (int) pSrc.at<uchar>(i+1, j-1);;
+                                int neighbor7 = (int) pSrc.at<uchar>(i, j-1);;
+                                int c1 = pSrc.at<uchar>(i, j) - neighbor1;
+                                int c2 = pSrc.at<uchar>(i, j) - neighbor5;
+                                if(c1 < 0 || c2 < 0)  {
+                                    pDst.at<uchar>(i, j) = 0;
+                                    //std::cout << "test" << std::endl;
+                                }
+                        }
+                }
+        }
+} 
