@@ -1,8 +1,7 @@
 #ifndef CONVOLUTION
 #define CONVOLUTION
 
-#include <opencv2/opencv.hpp>
-#include <cmath>
+#include <opencv2/imgproc/imgproc.hpp>
 
 class Convolution {
     

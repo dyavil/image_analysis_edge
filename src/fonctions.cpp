@@ -1,6 +1,5 @@
 #include "fonctions.hpp"
 
-
 // Detecte les contours d'un image
 cv::Mat detectContours(cv::Mat & img, Color col) {
     

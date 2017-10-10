@@ -1,11 +1,5 @@
-#include <opencv2/opencv.hpp>
-#include "convolution.hpp"
+#include <opencv2/highgui/highgui.hpp>
 #include "fonctions.hpp"
-#include <iostream>
-#include <string>
-
-using namespace cv;
-
 
 int main(int argc, char ** argv){
 
