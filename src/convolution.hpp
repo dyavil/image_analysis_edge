@@ -15,7 +15,6 @@ public:
 
     // Applique la convolution a une image couleur
     cv::Mat applyToRGB(const cv::Mat & img);
-
     
 private:
     // Attributs

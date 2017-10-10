@@ -15,9 +15,10 @@ bool hasNeighbor(const cv::Mat & img, uchar seuil, unsigned int x, unsigned int 
 // Applique l'hystérésis sur une image en niveaux de gris
 cv::Mat hysteresis (const cv::Mat & img, uchar seuilBas = 5, uchar seuilHaut = 10);
 
+// Réduit les contours verticaux
+cv::Mat ThinVertical(const cv::Mat & img);
 
-void ThinVertical(cv::Mat & pSrc, cv::Mat & pDst);
-
-void ThinHorizontal(cv::Mat & pSrc, cv::Mat & pDst);
+// Réduit les contours horizontaux
+cv::Mat ThinHorizontal(const cv::Mat & img);
 
 #endif // FONCTIONS

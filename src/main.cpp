@@ -35,8 +35,8 @@ int main(int argc, char ** argv){
     cv::namedWindow("hysteresisGray", cv::WINDOW_AUTOSIZE);
     cv::imshow("hysteresisGray", imgDst4);
 
-    cv::namedWindow("hysteresisThin", cv::WINDOW_AUTOSIZE);
-    cv::imshow("hysteresisThin", imgDst6);
+    cv::namedWindow("hysteresisGrayThin", cv::WINDOW_AUTOSIZE);
+    cv::imshow("hysteresisGrayThin", imgDst6);
     
     cv::waitKey();
 

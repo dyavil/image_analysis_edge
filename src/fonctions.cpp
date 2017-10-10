@@ -16,16 +16,12 @@ cv::Mat detectContours(cv::Mat & img, Color col, bool thin) {
     switch(col) {
     
         case gray:
-            if (thin)
-            {
-                imgVt = convV.applyToGray(img);
-                ThinVertical(imgVt, imgV);
-                imgHt = convH.applyToGray(img);
-                ThinHorizontal(imgHt, imgH);
-            }
-            else {
-                imgV = convV.applyToGray(img);
-                imgH = convH.applyToGray(img);
+            imgV = convV.applyToGray(img);
+            imgH = convH.applyToGray(img);
+            
+            if (thin) {
+                imgV = ThinVertical(imgV);
+                imgH = ThinHorizontal(imgH);
             }
             
             for(int y = 0; y < img.rows; ++y) {
@@ -100,59 +96,44 @@ cv::Mat hysteresis (const cv::Mat & img, uchar seuilBas, uchar seuilHaut) {
     return ret;
 }
 
-
-void ThinVertical(cv::Mat & pSrc, cv::Mat & pDst) {
-        int rows = pSrc.rows;
-        int cols = pSrc.cols;
-        pDst = pSrc.clone();
-        for(int i = 0; i < rows; i++) {
-                for(int j = 0; j < cols; j++) {
-                        if(pSrc.at<uchar>(i, j) != 0) {
-                                /// 8 voisins
-                                
-                                int neighbor0 = (int) pSrc.at<uchar>(i-1, j-1);
-                                int neighbor1 = (int) pSrc.at<uchar>(i-1, j);
-                                int neighbor2 = (int) pSrc.at<uchar>(i-1, j+1);
-                                int neighbor3 = (int) pSrc.at<uchar>(i, j+1);;
-                                int neighbor4 = (int) pSrc.at<uchar>(i+1, j+1);;
-                                int neighbor5 = (int) pSrc.at<uchar>(i+1, j);;
-                                int neighbor6 = (int) pSrc.at<uchar>(i+1, j-1);;
-                                int neighbor7 = (int) pSrc.at<uchar>(i, j-1);;
-                                int c1 = pSrc.at<uchar>(i, j) - neighbor7;
-                                int c2 = pSrc.at<uchar>(i, j) - neighbor3;
-                                if(c1 < 0 || c2 < 0)  {
-                                    pDst.at<uchar>(i, j) = 0;
-                                    //std::cout << "test" << std::endl;
-                                }
-                        }
+// Réduit les contours verticaux
+cv::Mat ThinVertical(const cv::Mat & img) {
+    cv::Mat ret = img.clone();
+    
+    for(int i = 0; i < img.rows; ++i) {
+        for(int j = 0; j < img.cols; ++j) {
+            if(img.at<uchar>(i, j) != 0) {
+                uchar downNeighbor = img.at<uchar>(i, j-1);;
+                uchar upNeighbor = img.at<uchar>(i, j+1);;
+                int p1 = img.at<uchar>(i, j) - downNeighbor;
+                int p2 = img.at<uchar>(i, j) - upNeighbor;
+                if(p1 < 0 || p2 < 0)  {
+                    ret.at<uchar>(i, j) = 0;
                 }
+            }
         }
+    }
+    
+    return ret;
 } 
 
-void ThinHorizontal(cv::Mat & pSrc, cv::Mat & pDst) {
-        int rows = pSrc.rows;
-        int cols = pSrc.cols;
-        pDst = pSrc.clone();
-        for(int i = 0; i < rows; i++) {
-                for(int j = 0; j < cols; j++) {
-                        if(pSrc.at<uchar>(i, j) != 0) {
-                                /// 8 voisins
-                                
-                                int neighbor0 = (int) pSrc.at<uchar>(i-1, j-1);
-                                int neighbor1 = (int) pSrc.at<uchar>(i-1, j);
-                                int neighbor2 = (int) pSrc.at<uchar>(i-1, j+1);
-                                int neighbor3 = (int) pSrc.at<uchar>(i, j+1);;
-                                int neighbor4 = (int) pSrc.at<uchar>(i+1, j+1);;
-                                int neighbor5 = (int) pSrc.at<uchar>(i+1, j);;
-                                int neighbor6 = (int) pSrc.at<uchar>(i+1, j-1);;
-                                int neighbor7 = (int) pSrc.at<uchar>(i, j-1);;
-                                int c1 = pSrc.at<uchar>(i, j) - neighbor1;
-                                int c2 = pSrc.at<uchar>(i, j) - neighbor5;
-                                if(c1 < 0 || c2 < 0)  {
-                                    pDst.at<uchar>(i, j) = 0;
-                                    //std::cout << "test" << std::endl;
-                                }
-                        }
+// Réduit les contours horizontaux
+cv::Mat ThinHorizontal(const cv::Mat & img) {
+        cv::Mat ret = img.clone();
+        
+        for(int i = 0; i < img.rows; ++i) {
+            for(int j = 0; j < img.cols; ++j) {
+                if(img.at<uchar>(i, j) != 0) {
+                    uchar leftNeighbor = img.at<uchar>(i-1, j);
+                    uchar rightNeighbor = img.at<uchar>(i+1, j);;
+                    int p1 = img.at<uchar>(i, j) - leftNeighbor;
+                    int p2 = img.at<uchar>(i, j) - rightNeighbor;
+                    if(p1 < 0 || p2 < 0)  {
+                        ret.at<uchar>(i, j) = 0;
+                    }
                 }
+            }
         }
+        
+        return ret;
 } 
