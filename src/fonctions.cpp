@@ -1,11 +1,13 @@
 #include "fonctions.hpp"
 
 
+// Detecte les contours d'un image
 cv::Mat detectContours(cv::Mat & img, Color col) {
     
     cv::Mat imgV, imgH;
     cv::Mat ret = img.clone();
     
+    // Filtre de Prewitt
     std::vector<std::vector<float>> verticalFilter = { {-1, 0, 1}, {-1, 0, 1}, {-1, 0, 1} };
     std::vector<std::vector<float>> horizontalFilter = { {1, 1, 1}, {0, 0, 0}, {-1, -1, -1} };
         
@@ -18,8 +20,8 @@ cv::Mat detectContours(cv::Mat & img, Color col) {
             imgV = convV.applyToGray(img);
             imgH = convH.applyToGray(img);
             
-           for(int x = 1; x < img.rows - 1; x++) {
-                for(int y = 1; y < img.cols - 1; y++) {
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
                     ret.at<uchar>(x, y) = uchar(std::max(imgV.at<uchar>(x, y), imgH.at<uchar>(x, y)));
                 }
             } 
@@ -30,16 +32,16 @@ cv::Mat detectContours(cv::Mat & img, Color col) {
             imgV = convV.applyToRGB(img);
             imgH = convH.applyToRGB(img);
     
-            for(int x = 1; x < img.rows - 1; x++) {
-                for(int y = 1; y < img.cols - 1; y++) {
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
                     cv::Vec3b pixV = imgV.at<cv::Vec3b>(x, y);
                     cv::Vec3b pixH = imgH.at<cv::Vec3b>(x, y);
                 
-                    int red = std::max(pixV.val[0], pixH.val[0]);
-                    int green = std::max(pixV.val[1], pixH.val[1]);
                     int blue = std::max(pixV.val[2], pixH.val[2]);
+                    int green = std::max(pixV.val[1], pixH.val[1]);
+                    int red = std::max(pixV.val[0], pixH.val[0]);
                     
-                    ret.at<cv::Vec3b>(x, y) = cv::Vec3b(red, green, blue);
+                    ret.at<cv::Vec3b>(x, y) = cv::Vec3b(blue, green, red);
                 }
             }     
         
@@ -49,23 +51,44 @@ cv::Mat detectContours(cv::Mat & img, Color col) {
     return ret;
 }
 
-
-/*
-if(abs(tmp) > 5) res.at<uchar>(j, k) = 255;
-else res.at<uchar>(j, k) = 0;
-
-if(abs(tmp) > 130) res.at<uchar>(j, k) = 255;
-else if(abs(tmp) > 100){
-    for(int l = -1; l < 2; l++){
-        for(int m = -1; m < 2; m++){
-            if(j+l > 0 && m+l > 0){
-                if (res.at<uchar>(j+l, k+l) > 200){
-                    res.at<uchar>(j, k) = 255;
-                    break;
+// Indique si un pixel d'une image binaire possède au moins un voisin
+bool hasNeighbor(const cv::Mat & img, int x, int y) {
+    for(int i = -1; i < 2; ++i){
+        for(int j = -1; j < 2; ++j){
+            if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
+                if(img.at<uchar>(x+i, y+j) == 255){
+                    return true;
                 }
-            } 
+            }
+        }        
+    }
+
+    return false;
+} 
+
+// Applique l'hystérésis sur une image en niveaux de gris
+cv::Mat hysteresis (const cv::Mat & img, uchar seuilBas, uchar seuilHaut) {
+
+    assert(seuilBas <= seuilHaut);
+
+    cv::Mat ret = img.clone();
+    
+    for(int x = 0; x < img.rows; x++) {
+        for(int y = 0; y < img.cols; y++) {
+            if(img.at<uchar>(x, y) > seuilHaut) { ret.at<uchar>(x, y) = 255; }
+            if(img.at<uchar>(x, y) < seuilBas) { ret.at<uchar>(x, y) = 0; }
         }
     }
+
+    for(int x = 0; x < ret.rows; x++) {
+        for(int y = 0; y < ret.cols; y++) {
+            if(ret.at<uchar>(x, y) > seuilBas && ret.at<uchar>(x, y) < seuilHaut) {
+                if(hasNeighbor(ret, x, y)) {
+                    ret.at<uchar>(x, y) = 255;
+                }
+            }
+        }
+    }
+    
+    return ret;
 }
-else res.at<uchar>(j, k) = 0;
-*/
