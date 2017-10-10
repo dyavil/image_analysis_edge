@@ -6,6 +6,9 @@
 
 enum Color { gray = 0, rgb };   // Image en niveau de gris ou couleurs
 
+// Convertit une image en niveau de gris
+cv::Mat convertToGrayScale(cv::Mat & img);
+
 // Detecte les contours d'un image
 cv::Mat detectContours(cv::Mat & img, Color col, bool thin=false);
 

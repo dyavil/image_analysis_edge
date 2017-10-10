@@ -1,9 +1,25 @@
 #include "fonctions.hpp"
 
+// Convertit une image en niveau de gris
+cv::Mat convertToGrayScale(cv::Mat & img) {
+    cv::Mat ret(img.rows, img.cols, CV_8UC1);
+
+    for(int y = 0; y < img.rows; ++y) {
+        for(int x = 0; x < img.cols; ++x) {
+            cv::Vec3b pixel = img.at<cv::Vec3b>(y, x);
+            uchar blue = pixel.val[0];
+            uchar green = pixel.val[1];
+            uchar red = pixel.val[2];
+            ret.at<uchar>(y, x) = uchar(0.07*blue + 0.72*green + 0.21*red);
+        }
+    }
+
+    return ret;
+}
+
 // Detecte les contours d'un image
-cv::Mat detectContours(cv::Mat & img, Color col, bool thin) {
-    
-    cv::Mat imgV, imgH, imgVt, imgHt;
+cv::Mat detectContours(cv::Mat & img, Color col, bool thin) {   
+    cv::Mat imgV, imgH;
     cv::Mat ret = img.clone();
     
     // Filtre de Prewitt
@@ -72,7 +88,6 @@ bool hasNeighbor(const cv::Mat & img, uchar seuil, unsigned int x, unsigned int 
 
 // Applique l'hystérésis sur une image en niveaux de gris
 cv::Mat hysteresis (const cv::Mat & img, uchar seuilBas, uchar seuilHaut) {
-
     assert(seuilBas <= seuilHaut);
 
     cv::Mat ret = img.clone();
