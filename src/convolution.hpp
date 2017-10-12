@@ -11,7 +11,10 @@ public:
     Convolution(std::vector<std::vector<float>> _conv, int _width, int _height);
 
     // Applique la convolution a une image grise
-    cv::Mat applyToGray(const cv::Mat & source);
+    cv::Mat applyToGrayBis(const cv::Mat & source);
+
+    // Applique la convolution a une image en niveaux de gris
+    cv::Mat applyToGray(const cv::Mat & img, bool normalize = true);
 
     // Applique la convolution a une image couleur
     cv::Mat applyToRGB(const cv::Mat & img);

@@ -32,9 +32,10 @@ cv::Mat detectContours(cv::Mat & img, Color col, bool thin) {
     switch(col) {
     
         case gray:
-            imgV = convV.applyToGray(img);
-            imgH = convH.applyToGray(img);
+            imgV = convV.applyToGray(img, false);
+            imgH = convH.applyToGray(img, false);
             
+            // Delete this
             if (thin) {
                 imgV = ThinVertical(imgV);
                 imgH = ThinHorizontal(imgH);
@@ -104,6 +105,47 @@ cv::Mat hysteresis (const cv::Mat & img, uchar seuilBas, uchar seuilHaut) {
                 } else {
                     ret.at<uchar>(x, y) = 0;
                 }
+            }
+        }
+    }
+    
+    return ret;
+}
+
+// Réduit les contours
+cv::Mat refineContours(const cv::Mat & img, int largeur) {
+    cv::Mat imgV, imgH;
+    cv::Mat ret = img.clone();
+    
+    std::vector<std::vector<float>> verticalRight = { {-1, 1, 0} };
+    std::vector<std::vector<float>> horizontalUp = { {0}, {1}, {-1} };
+    std::vector<std::vector<float>> verticalLeft = { {0, 1, -1} };
+    std::vector<std::vector<float>> horizontalDown = { {-1}, {1}, {0} };
+    
+    Convolution convVR(verticalRight, 1, 3);
+    Convolution convHU(horizontalUp, 3, 1);
+    Convolution convVL(verticalLeft, 1, 3);
+    Convolution convHD(horizontalDown, 3, 1);
+    
+    // On itère selon la largeur max des contours
+    for(int i = 0; i < (largeur-1)/2; ++i) {
+        // 1ère passe : supprime les pixels a droite/dessus
+        imgV = convVR.applyToGray(ret, false);
+        imgH = convHU.applyToGray(ret, false);
+        
+        for(int y = 0; y < ret.rows; ++y) {
+            for(int x = 0; x < ret.cols; ++x) {
+                ret.at<uchar>(y, x) = std::max(imgV.at<uchar>(y, x), imgH.at<uchar>(y, x));
+            }
+        }
+        
+        // 2ème passe : supprime les pixels a gauche/dessous
+        imgV = convVL.applyToGray(ret, false);
+        imgH = convHD.applyToGray(ret, false);
+        
+        for(int y = 0; y < ret.rows; ++y) {
+            for(int x = 0; x < ret.cols; ++x) {
+                ret.at<uchar>(y, x) = std::max(imgV.at<uchar>(y, x), imgH.at<uchar>(y, x));
             }
         }
     }

@@ -17,7 +17,7 @@ Convolution::Convolution(std::vector<std::vector<float>> _conv, int _width, int 
 }
 
 // Applique la convolution a une image grise
-cv::Mat Convolution::applyToGray(const cv::Mat & source) {
+cv::Mat Convolution::applyToGrayBis(const cv::Mat & source) {
     
     cv::Mat res;
     source.copyTo(res);
@@ -48,6 +48,37 @@ cv::Mat Convolution::applyToGray(const cv::Mat & source) {
     }
     
     return res;
+}
+
+// Applique la convolution a une image en niveaux de gris
+cv::Mat Convolution::applyToGray(const cv::Mat & img, bool normalize) {
+    
+    cv::Mat ret = img.clone();
+    int midW = width / 2;
+    int midH = height / 2;
+    
+    for(int y = 0; y < img.rows; ++y) {
+        for(int x = 0; x < img.cols; ++x) {
+            float gray = 0;           
+            
+            for(int i = -midW; i < midW + 1; ++i) {
+                for(int j = -midH; j < midH + 1; ++j) {
+                    uchar pixel = 0;
+                    if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) { pixel = img.at<uchar>(y+j, x+i); }
+                    float c = conv[i + midW][j + midH];
+                    gray += pixel * c;
+                }
+            }
+            
+            if(gray < 0) { gray = 0; }
+            
+            if(normalize) { gray /= coeff; }
+            
+            ret.at<uchar>(y, x) =  gray;    
+        }
+    }
+    
+    return ret; 
 }
 
 // Applique la convolution a une image couleur
