@@ -16,109 +16,77 @@ Convolution::Convolution(std::vector<std::vector<float>> _conv, int _width, int 
     if(coeff == 0) {coeff = 1;}
 }
 
-// Applique la convolution a une image grise
-cv::Mat Convolution::applyToGrayBis(const cv::Mat & source) {
+// Applique la convolution a une image
+void Convolution::apply(cv::Mat & img, bool normalize) {
     
-    cv::Mat res;
-    source.copyTo(res);
- 
-    for(int j = 0; j < source.rows; ++j){
-        for(int k = 0; k < source.cols; ++k){
-            
-            float gray = 0;
-            int dl = width / 2;
-            int dm = height / 2;
-            
-            for(int l = 0; l < height; ++l) {
-                for (int m = 0; m < width; ++m) {
-                    if(j-dl < 0 || k-dm < 0) {
-                        gray +=0;
-                    } else {
-                        int pix = (int)source.at<uchar>(j-dl, k-dm);
-                        gray += pix * conv[l][m];
-                    }
-                    dm--;   
-                }
-                dm = height / 2;
-                dl--;
-            }
-            
-            res.at<uchar>(j, k) = abs(gray);            
-        }
-    }
-    
-    return res;
-}
-
-// Applique la convolution a une image en niveaux de gris
-cv::Mat Convolution::applyToGray(const cv::Mat & img, bool normalize) {
-    
-    cv::Mat ret = img.clone();
+    cv::Mat temp;
     int midW = width / 2;
     int midH = height / 2;
+    int nbChannels = img.channels();
     
-    for(int y = 0; y < img.rows; ++y) {
-        for(int x = 0; x < img.cols; ++x) {
-            float gray = 0;           
-            
-            for(int i = -midW; i < midW + 1; ++i) {
-                for(int j = -midH; j < midH + 1; ++j) {
-                    uchar pixel = 0;
-                    if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) { pixel = img.at<uchar>(y+j, x+i); }
-                    float c = conv[i + midW][j + midH];
-                    gray += pixel * c;
-                }
-            }
-            
-            if(gray < 0) { gray = 0; }
-            
-            if(normalize) { gray /= coeff; }
-            
-            ret.at<uchar>(y, x) =  gray;    
-        }
-    }
-    
-    return ret; 
-}
+    switch(nbChannels) {
+        case 1: {
+            temp = cv::Mat(img.rows, img.cols, CV_32FC1);
 
-// Applique la convolution a une image couleur
-cv::Mat Convolution::applyToRGB(const cv::Mat & img) {
-    
-    cv::Mat ret = img.clone();
-    int midW = width / 2;
-    int midH = height / 2;
-    
-    for(int y = 0; y < img.rows; ++y) {
-        for(int x = 0; x < img.cols; ++x) {
-            float blue = 0;
-            float green = 0;
-            float red = 0;            
-            
-            for(int i = -midW; i < midW + 1; ++i) {
-                for(int j = -midH; j < midH + 1; ++j) {
-                    cv::Vec3b pixel = cv::Vec3b(0, 0, 0);
-                    if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
-                        pixel = img.at<cv::Vec3b>(y+j, x+i);
-                    }
-                    float c = conv[i + midW][j + midH];
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
+
+                    float gray = 0;
                     
-                    blue += pixel.val[0] * c;
-                    green += pixel.val[1] * c;
-                    red += pixel.val[2] * c;
+                    for(int i = -midW; i < midW + 1; ++i) {
+                        for(int j = -midH; j < midH + 1; ++j) {
+                            float c = conv[i + midW][j + midH];
+                            float gPixel = 0;
+                            if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
+                                gPixel = img.at<float>(y+j, x+i);
+                            }
+                            gray += c * gPixel;                      
+                        }
+                    }
+                    if(normalize) { gray /= coeff; }
+                    temp.at<float>(y, x) = gray;  
                 }
             }
-            
-            if(blue < 0) { blue = 0; }
-            if(green < 0) { green = 0; }
-            if(red < 0) { red = 0; }
-            
-            blue /= coeff;
-            green /= coeff;
-            red /= coeff;
-              
-            ret.at<cv::Vec3b>(y, x) =  cv::Vec3b(blue, green, red);    
+            break;
+        }
+        case 2: {
+            // Not implemented
+            break;
+        }
+        default: {
+            temp = cv::Mat(img.rows, img.cols, CV_32FC3);
+        
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
+
+                    float blue = 0;
+                    float green = 0;
+                    float red = 0; 
+
+                    for(int i = -midW; i < midW + 1; ++i) {
+                        for(int j = -midH; j < midH + 1; ++j) {
+                            float c = conv[i + midW][j + midH];
+                            cv::Vec3f rgbPixel = cv::Vec3f(0, 0, 0);
+                            if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
+                                rgbPixel = img.at<cv::Vec3f>(y+j, x+i);
+                            }
+                            blue += c * rgbPixel.val[0];
+                            green += c * rgbPixel.val[1];
+                            red += c * rgbPixel.val[2];
+                        }
+                    }
+                    if(normalize) {
+                        blue /= coeff;
+                        green /= coeff;
+                        red /= coeff;
+                    }
+                    
+                    temp.at<cv::Vec3f>(y, x) =  cv::Vec3f(blue, green, red);
+                }
+            }
+            break;
         }
     }
     
-    return ret; 
+    img = temp; 
 }

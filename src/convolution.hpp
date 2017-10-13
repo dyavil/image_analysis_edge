@@ -10,19 +10,14 @@ public:
     // Constrcuteur
     Convolution(std::vector<std::vector<float>> _conv, int _width, int _height);
 
-    // Applique la convolution a une image grise
-    cv::Mat applyToGrayBis(const cv::Mat & source);
+    // Applique la convolution a une image
+    void apply(cv::Mat & img, bool normalize = false);
 
-    // Applique la convolution a une image en niveaux de gris
-    cv::Mat applyToGray(const cv::Mat & img, bool normalize = true);
-
-    // Applique la convolution a une image couleur
-    cv::Mat applyToRGB(const cv::Mat & img);
     
 private:
     // Attributs
     std::vector< std::vector<float> > conv;
-    int width, height;
+    unsigned int width, height;
     float coeff;
     
 };

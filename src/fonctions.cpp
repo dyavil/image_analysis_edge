@@ -1,77 +1,108 @@
 #include "fonctions.hpp"
 
-// Convertit une image en niveau de gris
-cv::Mat convertToGrayScale(cv::Mat & img) {
-    cv::Mat ret(img.rows, img.cols, CV_8UC1);
+// Charge une image dans une matrice de floats
+cv::Mat loadImg(std::string path) {
+    cv::Mat ret = cv::imread(path, 1);
+    ret.convertTo(ret, CV_32FC3);
+    return ret;
+}
 
+// Affiche la matrice dans une fenêtre
+void showImg(const cv::Mat & img, std::string name, bool convert) {
+    cv::Mat temp = img.clone();
+    if(convert) { img.convertTo(temp, CV_8UC1); }
+    cv::namedWindow(name, cv::WINDOW_AUTOSIZE);
+    cv::imshow(name, temp);
+}
+
+// Convertit une image en niveau de gris
+void convertToGrayScale(cv::Mat & img) {
+    cv::Mat temp(img.rows, img.cols, CV_32FC1);
+    
     for(int y = 0; y < img.rows; ++y) {
         for(int x = 0; x < img.cols; ++x) {
-            cv::Vec3b pixel = img.at<cv::Vec3b>(y, x);
-            uchar blue = pixel.val[0];
-            uchar green = pixel.val[1];
-            uchar red = pixel.val[2];
-            ret.at<uchar>(y, x) = uchar(0.07*blue + 0.72*green + 0.21*red);
+            cv::Vec3f pixel = img.at<cv::Vec3f>(y, x);
+            float blue = pixel.val[0];
+            float green = pixel.val[1];
+            float red = pixel.val[2];
+            temp.at<float>(y, x) = uchar(0.07*blue + 0.72*green + 0.21*red);
         }
     }
-
-    return ret;
+    
+    img = temp;
 }
 
 // Detecte les contours d'un image
-cv::Mat detectContours(cv::Mat & img, Color col, bool thin) {   
-    cv::Mat imgV, imgH;
-    cv::Mat ret = img.clone();
+void detectContours(cv::Mat & img, Filter method) {   
+    int nbChannels = img.channels();
+    cv::Mat imgH = img.clone();
+    cv::Mat imgV = img.clone();
     
-    // Filtre de Prewitt
-    std::vector<std::vector<float>> verticalFilter = { {-1, 0, 1}, {-1, 0, 1}, {-1, 0, 1} };
-    std::vector<std::vector<float>> horizontalFilter = { {1, 1, 1}, {0, 0, 0}, {-1, -1, -1} };
-        
-    Convolution convV(verticalFilter, 3, 3);
-    Convolution convH(horizontalFilter, 3, 3);
+    // TODO : Ré-ajouter les fontions thin de Livaï /!\
     
-    switch(col) {
+    // TODO : Changer la methode de fusion ? abs > max ?
     
-        case gray:
-            imgV = convV.applyToGray(img, false);
-            imgH = convH.applyToGray(img, false);
-            
-            // Delete this
-            if (thin) {
-                imgV = ThinVertical(imgV);
-                imgH = ThinHorizontal(imgH);
-            }
-            
-            for(int y = 0; y < img.rows; ++y) {
-                for(int x = 0; x < img.cols; ++x) {
-                    ret.at<uchar>(y, x) = uchar(std::max(imgV.at<uchar>(y, x), imgH.at<uchar>(y, x)));
-                }
-            } 
-            
+    // Filtres de Prewitt
+    std::vector<std::vector<float>> horizontalPrewitt = { {1, 1, 1}, {0, 0, 0}, {-1, -1, -1} };
+    std::vector<std::vector<float>> verticalPrewitt = { {-1, 0, 1}, {-1, 0, 1}, {-1, 0, 1} };
+    
+    // Filtres de Sobel
+    std::vector<std::vector<float>> horizontalSobel = { {1, 2, 1}, {0, 0, 0}, {-1, -2, -1} };
+    std::vector<std::vector<float>> verticalSobel = { {-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1} };
+    
+    // Convolutions 
+    Convolution convHorizontalPrewitt(horizontalPrewitt, 3, 3);
+    Convolution convVerticalPrewitt(verticalPrewitt, 3, 3);
+    Convolution convHorizontalSobel(horizontalSobel, 3, 3);
+    Convolution convVerticalSobel(verticalSobel, 3, 3);
+    
+    // Application des filtres horizontaux & verticaux
+    switch(method) {
+        case Sobel:
+            convHorizontalSobel.apply(imgH);
+            convVerticalSobel.apply(imgV);
             break;
             
-        case rgb:   
-            imgV = convV.applyToRGB(img);
-            imgH = convH.applyToRGB(img);
-    
-            for(int y = 0; y < img.rows; ++y) {
-                for(int x = 0; x < img.cols; ++x) {
-                    cv::Vec3b pixV = imgV.at<cv::Vec3b>(y, x);
-                    cv::Vec3b pixH = imgH.at<cv::Vec3b>(y, x);
-                
-                    int blue = std::max(pixV.val[2], pixH.val[2]);
-                    int green = std::max(pixV.val[1], pixH.val[1]);
-                    int red = std::max(pixV.val[0], pixH.val[0]);
-                    
-                    ret.at<cv::Vec3b>(y, x) = cv::Vec3b(blue, green, red);
-                }
-            }     
-        
+        default:
+            convHorizontalPrewitt.apply(imgH);
+            convVerticalPrewitt.apply(imgV);
             break;
     }
     
-    return ret;
+    // Fusion des 2 images obtenues
+    switch(nbChannels) {
+        case 1: {
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
+                    img.at<float>(y, x) = std::max(imgV.at<float>(y, x), imgH.at<float>(y, x));
+                }
+            }
+            break;
+        }
+        case 2: {
+            // Not implemented
+            break;
+        }
+        default: {
+        
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
+                    cv::Vec3f pixV = imgV.at<cv::Vec3f>(y, x);
+                    cv::Vec3f pixH = imgH.at<cv::Vec3f>(y, x);
+                
+                    float blue = std::max(pixV.val[2], pixH.val[2]);
+                    float green = std::max(pixV.val[1], pixH.val[1]);
+                    float red = std::max(pixV.val[0], pixH.val[0]);
+                    
+                    img.at<cv::Vec3f>(y, x) = cv::Vec3f(blue, green, red);
+                }
+            }
+            break;
+        }
+    }
 }
 
+/*
 // Indique si un pixel d'une image binaire possède un voisin
 bool hasNeighbor(const cv::Mat & img, uchar seuil, unsigned int x, unsigned int y) {
     for(int i = -1; i < 2; ++i){
@@ -193,4 +224,5 @@ cv::Mat ThinHorizontal(const cv::Mat & img) {
         }
         
         return ret;
-} 
+}
+*/
