@@ -9,7 +9,7 @@ Convolution::Convolution(std::vector<std::vector<float>> _conv, int _width, int 
     
     for(int x = 0; x < width; ++x) {
         for(int y = 0; y < height; ++y) {
-            coeff += std::abs(conv[x][y]);
+            if(conv[x][y] > 0) { coeff += conv[x][y]; }
         }
     }
     

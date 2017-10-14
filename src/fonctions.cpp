@@ -15,6 +15,7 @@ void showImg(const cv::Mat & img, std::string name, bool convert) {
     cv::imshow(name, temp);
 }
 
+
 // Convertit une image en niveau de gris
 void convertToGrayScale(cv::Mat & img) {
     cv::Mat temp(img.rows, img.cols, CV_32FC1);
@@ -32,6 +33,7 @@ void convertToGrayScale(cv::Mat & img) {
     img = temp;
 }
 
+
 // Detecte les contours d'un image
 void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {   
     int nbChannels = img.channels();
@@ -40,8 +42,6 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
     pente = cv::Mat::ones(img.rows, img.cols, CV_32FC1);
     
     // TODO : Ré-ajouter les fontions thin de Livaï /!\
-    
-    // TODO : Changer la methode de fusion ? abs > max ?
     
     // Filtres de Prewitt
     std::vector<std::vector<float>> horizontalPrewitt = { {1, 1, 1}, {0, 0, 0}, {-1, -1, -1} };
@@ -75,22 +75,19 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
         case 1: {
             for(int y = 0; y < img.rows; ++y) {
                 for(int x = 0; x < img.cols; ++x) {
-                    //old way 
-                    //img.at<float>(y, x) = std::max(imgV.at<float>(y, x), imgH.at<float>(y, x));
-                    //newway
-                    img.at<float>(y, x) = sqrt((imgV.at<float>(y, x)*imgV.at<float>(y, x))+(imgH.at<float>(y, x)*imgH.at<float>(y, x)));
+                    img.at<float>(y, x) = sqrt(imgV.at<float>(y, x)*imgV.at<float>(y, x) + imgH.at<float>(y, x)*imgH.at<float>(y, x));
 
                     //calcul pente
                     if(imgV.at<float>(y, x) == 0) {
-                        pente.at<float>(y, x) = 3.14/2;
+                        pente.at<float>(y, x) = PI/2;
                     }
-                    else if(imgH.at<float>(y, x) == 0) pente.at<float>(y, x) = 0;
+                    else if(imgH.at<float>(y, x) == 0) {
+                        pente.at<float>(y, x) = 0;
+                    }
                     else {
                         pente.at<float>(y, x) = (atan(imgH.at<float>(y, x)/imgV.at<float>(y, x)));
-                        //std::cout << "fkelmkfem" << std::endl;
                     }
                     pente.at<float>(y, x) = pente.at<float>(y, x)* 180/3.14;
-
                 }
             }
             
@@ -108,9 +105,9 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
                     cv::Vec3f pixV = imgV.at<cv::Vec3f>(y, x);
                     cv::Vec3f pixH = imgH.at<cv::Vec3f>(y, x);
                 
-                    float blue = std::max(pixV.val[2], pixH.val[2]);
-                    float green = std::max(pixV.val[1], pixH.val[1]);
-                    float red = std::max(pixV.val[0], pixH.val[0]);
+                    float blue = sqrt(pixV.val[0]*pixV.val[0] + pixH.val[0]*pixH.val[0]);
+                    float green = sqrt(pixV.val[1]*pixV.val[1] + pixH.val[1]*pixH.val[1]);
+                    float red = sqrt(pixV.val[2]*pixV.val[2] + pixH.val[2]*pixH.val[2]);
                     
                     img.at<cv::Vec3f>(y, x) = cv::Vec3f(blue, green, red);
                 }
@@ -120,8 +117,7 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
     }
 }
 
-
-//calcul une orientation générale du gradian
+// Calcule une orientation générale du gradian
 void computePenteRange(cv::Mat & pente){
     for (int i = 0; i < pente.rows; ++i)
     {
@@ -157,30 +153,28 @@ bool hasNeighbor(const cv::Mat & img, float seuil, unsigned int x, unsigned int 
     return false;
 } 
 
-// Applique l'hystérésis sur une image en niveaux de gris
-cv::Mat hysteresis (const cv::Mat & img, float seuilBas, float seuilHaut) {
-    assert(seuilBas <= seuilHaut);
 
-    cv::Mat ret = img.clone();
+// Applique l'hystérésis sur une image en niveaux de gris
+void hysteresis (cv::Mat & img, float seuilBas, float seuilHaut) {
+    assert(seuilBas <= seuilHaut);
     
     for(int x = 0; x < img.rows; x++) {
         for(int y = 0; y < img.cols; y++) {
             if(img.at<float>(x, y) > seuilHaut) { 
-                ret.at<float>(x, y) = 255; 
+                img.at<float>(x, y) = 255; 
             } else if(img.at<float>(x, y) < seuilBas) {
-                ret.at<float>(x, y) = 0;
+                img.at<float>(x, y) = 0;
             } else {
-                if(hasNeighbor(ret, seuilHaut, x, y)) {
-                    ret.at<float>(x, y) = 255;
+                if(hasNeighbor(img, seuilHaut, x, y)) {
+                    img.at<float>(x, y) = 255;
                 } else {
-                    ret.at<float>(x, y) = 0;
+                    img.at<float>(x, y) = 0;
                 }
             }
         }
     }
-    
-    return ret;
 }
+
 /*
 // Réduit les contours
 cv::Mat refineContours(const cv::Mat & img, int largeur) {
@@ -267,6 +261,7 @@ cv::Mat ThinHorizontal(const cv::Mat & img) {
 */
 
 
+// Réduit les contours en fonction de leur pente
 cv::Mat ThinAll(const cv::Mat & img, const cv::Mat & pente){
     cv::Mat ret = img.clone();
         int count = 0;
