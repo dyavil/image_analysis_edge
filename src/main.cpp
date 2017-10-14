@@ -6,9 +6,9 @@ int main(int argc, char ** argv) {
     cv::Mat imgTest = loadImg("./data/test.png");
     cv::Mat imgLena1 = loadImg("./data/lena.jpg");
     cv::Mat imgLena2 = loadImg("./data/lena.jpg");
+    cv::Mat pente;
     cv::Mat hyst;
     cv::Mat hyst2;
-    cv::Mat pente;
     cv::Mat pente1;
     cv::Mat imgDst8;
     cv::Mat imgDst9;
@@ -32,7 +32,7 @@ int main(int argc, char ** argv) {
     showImg(imgLena1, "contoursPrewitt");
     showImg(imgLena2, "contoursSobel");
     showImg(imgDst9, "affinement multi");
-    showImg(imgDst8, "pente prewit");
+    showImg(pente, "pente prewit");
     
     cv::waitKey();
 
