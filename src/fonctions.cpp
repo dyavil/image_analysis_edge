@@ -33,10 +33,11 @@ void convertToGrayScale(cv::Mat & img) {
 }
 
 // Detecte les contours d'un image
-void detectContours(cv::Mat & img, Filter method) {   
+void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {   
     int nbChannels = img.channels();
     cv::Mat imgH = img.clone();
     cv::Mat imgV = img.clone();
+    pente = cv::Mat::ones(img.rows, img.cols, CV_32FC1);
     
     // TODO : Ré-ajouter les fontions thin de Livaï /!\
     
@@ -74,9 +75,26 @@ void detectContours(cv::Mat & img, Filter method) {
         case 1: {
             for(int y = 0; y < img.rows; ++y) {
                 for(int x = 0; x < img.cols; ++x) {
-                    img.at<float>(y, x) = std::max(imgV.at<float>(y, x), imgH.at<float>(y, x));
+                    //old way 
+                    //img.at<float>(y, x) = std::max(imgV.at<float>(y, x), imgH.at<float>(y, x));
+                    //newway
+                    img.at<float>(y, x) = sqrt((imgV.at<float>(y, x)*imgV.at<float>(y, x))+(imgH.at<float>(y, x)*imgH.at<float>(y, x)));
+
+                    //calcul pente
+                    if(imgV.at<float>(y, x) == 0) {
+                        pente.at<float>(y, x) = 3.14/2;
+                    }
+                    else if(imgH.at<float>(y, x) == 0) pente.at<float>(y, x) = 0;
+                    else {
+                        pente.at<float>(y, x) = (atan(imgH.at<float>(y, x)/imgV.at<float>(y, x)));
+                        //std::cout << "fkelmkfem" << std::endl;
+                    }
+                    pente.at<float>(y, x) = pente.at<float>(y, x)* 180/3.14;
+
                 }
             }
+            
+            computePenteRange(pente);
             break;
         }
         case 2: {
@@ -102,13 +120,34 @@ void detectContours(cv::Mat & img, Filter method) {
     }
 }
 
-/*
+
+//calcul une orientation générale du gradian
+void computePenteRange(cv::Mat & pente){
+    for (int i = 0; i < pente.rows; ++i)
+    {
+        for (int j = 0; j < pente.cols; ++j)
+        {
+            float tmp = pente.at<float>(i, j);
+            if(tmp >=0 && tmp < 45) pente.at<float>(i, j) = 0;
+            else if(tmp >=45 && tmp < 90) pente.at<float>(i, j) = 30;
+            else if(tmp >=90 && tmp < 135) pente.at<float>(i, j) = 60;
+            else if(tmp >=135 && tmp <= 180) pente.at<float>(i, j) = 90;
+            else if(tmp >=-45 && tmp < 0) pente.at<float>(i, j) = 120;
+            else if(tmp >=-90 && tmp < -45) pente.at<float>(i, j) = 150;
+            else if(tmp >=-135 && tmp < -90) pente.at<float>(i, j) = 180;
+            else if(tmp >=-180 && tmp < -135) pente.at<float>(i, j) = 210;
+            else std::cout << "zarb" << std::endl;
+        }
+    }
+}
+
+
 // Indique si un pixel d'une image binaire possède un voisin
-bool hasNeighbor(const cv::Mat & img, uchar seuil, unsigned int x, unsigned int y) {
+bool hasNeighbor(const cv::Mat & img, float seuil, unsigned int x, unsigned int y) {
     for(int i = -1; i < 2; ++i){
         for(int j = -1; j < 2; ++j){
             if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
-                if(img.at<uchar>(x+i, y+j) > seuil){
+                if(img.at<float>(x+i, y+j) > seuil){
                     return true;
                 }
             }
@@ -119,22 +158,22 @@ bool hasNeighbor(const cv::Mat & img, uchar seuil, unsigned int x, unsigned int 
 } 
 
 // Applique l'hystérésis sur une image en niveaux de gris
-cv::Mat hysteresis (const cv::Mat & img, uchar seuilBas, uchar seuilHaut) {
+cv::Mat hysteresis (const cv::Mat & img, float seuilBas, float seuilHaut) {
     assert(seuilBas <= seuilHaut);
 
     cv::Mat ret = img.clone();
     
     for(int x = 0; x < img.rows; x++) {
         for(int y = 0; y < img.cols; y++) {
-            if(img.at<uchar>(x, y) > seuilHaut) { 
-                ret.at<uchar>(x, y) = 255; 
-            } else if(img.at<uchar>(x, y) < seuilBas) {
-                ret.at<uchar>(x, y) = 0;
+            if(img.at<float>(x, y) > seuilHaut) { 
+                ret.at<float>(x, y) = 255; 
+            } else if(img.at<float>(x, y) < seuilBas) {
+                ret.at<float>(x, y) = 0;
             } else {
                 if(hasNeighbor(ret, seuilHaut, x, y)) {
-                    ret.at<uchar>(x, y) = 255;
+                    ret.at<float>(x, y) = 255;
                 } else {
-                    ret.at<uchar>(x, y) = 0;
+                    ret.at<float>(x, y) = 0;
                 }
             }
         }
@@ -142,7 +181,7 @@ cv::Mat hysteresis (const cv::Mat & img, uchar seuilBas, uchar seuilHaut) {
     
     return ret;
 }
-
+/*
 // Réduit les contours
 cv::Mat refineContours(const cv::Mat & img, int largeur) {
     cv::Mat imgV, imgH;
@@ -226,3 +265,59 @@ cv::Mat ThinHorizontal(const cv::Mat & img) {
         return ret;
 }
 */
+
+
+cv::Mat ThinAll(const cv::Mat & img, const cv::Mat & pente){
+    cv::Mat ret = img.clone();
+        int count = 0;
+        int count2 = 0;
+        int count3 = 0;
+        for(int i = 1; i < img.rows-1; ++i) {
+            for(int j = 1; j < img.cols-1; ++j) {
+                if(img.at<float>(i, j) < 0) std::cout << "below" << std::endl;
+                float n1 = pente.at<float>(i-1, j-1);
+                float n2 = pente.at<float>(i-1, j);
+                float n3 = pente.at<float>(i-1, j+1);
+                float n4 = pente.at<float>(i, j-1);
+                float n5 = pente.at<float>(i, j+1);
+                float n6 = pente.at<float>(i+1, j-1);
+                float n7 = pente.at<float>(i+1, j);
+                float n8 = pente.at<float>(i+1, j+1);
+                //test pente puis module
+                count2++;
+                if(pente.at<float>(i, j) == n1) {
+                    if(img.at<float>(i-1, j-1) > img.at<float>(i, j)) {
+                        ret.at<float>(i, j)=0;
+                        count3++;
+                    }
+                } 
+                else if(pente.at<float>(i, j) == n2){
+                    if(img.at<float>(i-1, j) >= img.at<float>(i, j)){
+                        ret.at<float>(i, j)=0;
+                        count3++;
+                    } 
+                } 
+                else if(pente.at<float>(i, j) == n3){
+                    if(img.at<float>(i-1, j+1) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
+                } 
+                else if(pente.at<float>(i, j) == n4){
+                    if(img.at<float>(i, j-1) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
+                } 
+                else if(pente.at<float>(i, j) == n5){
+                    if(img.at<float>(i, j+1) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
+                } 
+                else if(pente.at<float>(i, j) == n6){
+                    if(img.at<float>(i+1, j-1) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
+                }
+                else if(pente.at<float>(i, j) == n7){
+                    if(img.at<float>(i+1, j) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
+                } 
+                else if(pente.at<float>(i, j) == n8) {
+                    if(img.at<float>(i+1, j+1) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
+                }
+                else count++;
+            }
+        }
+         std::cout << count2 << " count " << count << std::endl;
+        return ret;
+}
