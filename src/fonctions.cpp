@@ -52,10 +52,10 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
     std::vector<std::vector<float>> verticalSobel = { {-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1} };
     
     // Convolutions 
-    Convolution convHorizontalPrewitt(horizontalPrewitt, 3, 3);
-    Convolution convVerticalPrewitt(verticalPrewitt, 3, 3);
-    Convolution convHorizontalSobel(horizontalSobel, 3, 3);
-    Convolution convVerticalSobel(verticalSobel, 3, 3);
+    Convolution convHorizontalPrewitt(horizontalPrewitt);
+    Convolution convVerticalPrewitt(verticalPrewitt);
+    Convolution convHorizontalSobel(horizontalSobel);
+    Convolution convVerticalSobel(verticalSobel);
     
     // Application des filtres horizontaux & verticaux
     switch(method) {
@@ -168,7 +168,10 @@ bool hasNeighbor(const cv::Mat & img, float seuil, unsigned int x, unsigned int 
 
 // Applique l'hystérésis sur une image en niveaux de gris
 cv::Mat hysteresis(const cv::Mat & img, float seuilBas, float seuilHaut) {
-    assert(seuilBas <= seuilHaut);
+    if(seuilBas > seuilHaut) {
+        std::cout << "Filtre bas inférieur au filtre haut" << std::endl;
+        std::exit(1);
+    }
 
     cv::Mat ret = img.clone();
     
