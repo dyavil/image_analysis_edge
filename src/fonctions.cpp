@@ -73,6 +73,8 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
     // Fusion des 2 images obtenues
     switch(nbChannels) {
         case 1: {
+            float max = 0;
+            float min = 0;
             for(int y = 0; y < img.rows; ++y) {
                 for(int x = 0; x < img.cols; ++x) {
                     //old way 
@@ -80,9 +82,9 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
                     //newway
                     img.at<float>(y, x) = sqrt((imgV.at<float>(y, x)*imgV.at<float>(y, x))+(imgH.at<float>(y, x)*imgH.at<float>(y, x)));
 
-                    //calcul pente
+                    //calul pente
                     if(imgV.at<float>(y, x) == 0) {
-                        pente.at<float>(y, x) = 3.14/2;
+                        pente.at<float>(y, x) = -3.14/2;
                     }
                     else if(imgH.at<float>(y, x) == 0) pente.at<float>(y, x) = 0;
                     else {
@@ -90,10 +92,12 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
                         //std::cout << "fkelmkfem" << std::endl;
                     }
                     pente.at<float>(y, x) = pente.at<float>(y, x)* 180/3.14;
+                    if(pente.at<float>(y, x) > max) max = pente.at<float>(y, x);
+                    if(pente.at<float>(y, x) < min) min = pente.at<float>(y, x);
 
                 }
             }
-            
+            std::cout << "max " << max << ", min " << min << std::endl;
             computePenteRange(pente);
             break;
         }
@@ -136,6 +140,15 @@ void computePenteRange(cv::Mat & pente){
             else if(tmp >=-90 && tmp < -45) pente.at<float>(i, j) = 150;
             else if(tmp >=-135 && tmp < -90) pente.at<float>(i, j) = 180;
             else if(tmp >=-180 && tmp < -135) pente.at<float>(i, j) = 210;
+            //moin efficace....va savoir pk
+            /*if(tmp >=-22 && tmp < 23) pente.at<float>(i, j) = 0;
+            else if(tmp >=23 && tmp < 67) pente.at<float>(i, j) = 30;
+            else if(tmp >=67 && tmp < 112) pente.at<float>(i, j) = 60;
+            else if(tmp >=112 && tmp < 158) pente.at<float>(i, j) = 90;
+            else if(tmp >=158 || tmp < -158) pente.at<float>(i, j) = 120;
+            else if(tmp >=-158 && tmp < -112) pente.at<float>(i, j) = 150;
+            else if(tmp >=-112 && tmp < -67) pente.at<float>(i, j) = 180;
+            else if(tmp >=-67 && tmp < -22) pente.at<float>(i, j) = 210;*/
             else std::cout << "zarb" << std::endl;
         }
     }
@@ -286,7 +299,7 @@ cv::Mat ThinAll(const cv::Mat & img, const cv::Mat & pente){
                 //test pente puis module
                 count2++;
                 if(pente.at<float>(i, j) == n1) {
-                    if(img.at<float>(i-1, j-1) > img.at<float>(i, j)) {
+                    if(img.at<float>(i-1, j-1) >= img.at<float>(i, j)) {
                         ret.at<float>(i, j)=0;
                         count3++;
                     }
@@ -320,4 +333,36 @@ cv::Mat ThinAll(const cv::Mat & img, const cv::Mat & pente){
         }
          std::cout << count2 << " count " << count << std::endl;
         return ret;
+}
+
+
+cv::Mat makeChain(const cv::Mat & img, const cv::Mat & pente){
+    cv::Mat ret = img.clone();
+    for(int i = 1; i < img.rows-1; ++i) {
+        for(int j = 1; j < img.cols-1; ++j) {
+            if(img.at<float>(i, j) != 0) {
+                float topRightNeighbor = ret.at<float>(i-1, j+1);
+                float middleRightNeighbor = ret.at<float>(i, j+1);
+                float bottomRightNeighbor = ret.at<float>(i+1, j+1);
+                float bottomMiddleNeighbor = ret.at<float>(i+1, j);
+                float bottomLeftNeighbor = ret.at<float>(i+1, j-1);
+                float middleLeftNeighbor = ret.at<float>(i, j-1);
+                float topLeftNeighbor = ret.at<float>(i-1, j-1);
+                float topMiddleNeighbor = ret.at<float>(i-1, j);
+                /*if(topRightNeighbor > 100 || middleRightNeighbor > 100 || bottomRightNeighbor > 100
+                    || bottomMiddleNeighbor > 100 || bottomLeftNeighbor > 100 || middleLeftNeighbor > 100
+                    || topLeftNeighbor > 100 || topMiddleNeighbor > 100)  ret.at<float>(i, j) = 90;*/
+                if(pente.at<float>(i, j) == 0 || pente.at<float>(i, j) == 120){
+                    if((middleLeftNeighbor >= 90 || topLeftNeighbor >= 90 || bottomLeftNeighbor >= 90) 
+                        && (middleRightNeighbor >= 90 || topRightNeighbor >= 90 || bottomRightNeighbor >= 90)) ret.at<float>(i, j) = 90;
+                }
+                else if(pente.at<float>(i, j) == 30 || pente.at<float>(i, j) == 150){                  
+                    if((topMiddleNeighbor >= 90 || topLeftNeighbor >= 90 || topRightNeighbor >= 90) 
+                        && (bottomLeftNeighbor >= 90 || bottomMiddleNeighbor >= 90 || bottomRightNeighbor >= 90)) ret.at<float>(i, j) = 90;
+                }
+
+            }
+        }
+    }
+    return ret;
 }

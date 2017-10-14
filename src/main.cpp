@@ -11,6 +11,7 @@ int main(int argc, char ** argv) {
     cv::Mat pente;
     cv::Mat pente1;
     cv::Mat imgDst8;
+    cv::Mat imgDst9;
    
     // Traitements
     convertToGrayScale(imgLena1);
@@ -22,14 +23,16 @@ int main(int argc, char ** argv) {
     //std::cout << imgLena2 << std::endl;
     imgDst8 = ThinAll(imgLena1, pente);
     hyst2 = hysteresis(imgDst8, 80, 100);
+    imgDst8 = ThinAll(hyst, pente);
+    imgDst9 = makeChain(imgDst8, pente);
     //normalize(pente, pente, 255, 0, cv::NORM_MINMAX);
 
     
     // Affichage
     showImg(imgLena1, "contoursPrewitt");
     showImg(imgLena2, "contoursSobel");
-    showImg(imgDst8, "affinement multi");
-    showImg(pente, "pente prewit");
+    showImg(imgDst9, "affinement multi");
+    showImg(imgDst8, "pente prewit");
     
     cv::waitKey();
 

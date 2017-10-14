@@ -30,9 +30,11 @@ void computePenteRange(cv::Mat & rawPente);
 
 cv::Mat ThinAll(const cv::Mat & img, const cv::Mat & pente);
 
+cv::Mat makeChain(const cv::Mat & img, const cv::Mat & pente);
+
 // Réduit les contours
 /*cv::Mat refineContours(const cv::Mat & img, int largeur = 3);
-
+/*
 // Réduit les contours verticaux
 cv::Mat ThinVertical(const cv::Mat & img);
 
