@@ -12,11 +12,13 @@ int main(int argc, char ** argv) {
     cv::Mat pente1;
     cv::Mat imgDst8;
     cv::Mat imgDst9;
+    cv::Mat imgDst10;
+    cv::Mat imgDst11;
    
     // Traitements
     convertToGrayScale(imgLena1);
     detectContours(imgLena1, pente);
-    hyst = hysteresis(imgLena1, 80, 100);
+    hyst = hysteresis(imgLena1, 80, 110);
     
     convertToGrayScale(imgLena2);
     detectContours(imgLena2, pente1, Sobel);
@@ -24,15 +26,26 @@ int main(int argc, char ** argv) {
     imgDst8 = ThinAll(imgLena1, pente);
     hyst2 = hysteresis(imgDst8, 80, 100);
     imgDst8 = ThinAll(hyst, pente);
+    
     imgDst9 = makeChain(imgDst8, pente);
+    imgDst11 = imgDst9;
+    imgDst10 = fillContours(imgDst9, pente);
+
+    for (int i = 0; i < 0; ++i)
+    {
+        imgDst8 = ThinAll(imgDst10, pente);
+        imgDst9 = makeChain(imgDst8, pente);
+        imgDst10 = fillContours(imgDst9, pente);
+    }
+    
     //normalize(pente, pente, 255, 0, cv::NORM_MINMAX);
 
     
     // Affichage
     showImg(imgLena1, "contoursPrewitt");
     showImg(imgLena2, "contoursSobel");
-    showImg(imgDst9, "affinement multi");
-    showImg(pente, "pente prewit");
+    showImg(imgDst11, "affinement multi");
+    showImg(imgDst10, "pente prewit");
     
     cv::waitKey();
 

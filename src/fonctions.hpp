@@ -34,6 +34,8 @@ cv::Mat ThinAll(const cv::Mat & img, const cv::Mat & pente);
 
 cv::Mat makeChain(const cv::Mat & img, const cv::Mat & pente);
 
+cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente);
+
 // Réduit les contours
 /*cv::Mat refineContours(const cv::Mat & img, int largeur = 3);
 /*

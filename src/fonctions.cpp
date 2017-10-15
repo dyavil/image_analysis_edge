@@ -329,7 +329,7 @@ cv::Mat ThinAll(const cv::Mat & img, const cv::Mat & pente){
                 else count++;
             }
         }
-         std::cout << count2 << " count " << count << std::endl;
+         //std::cout << count2 << " count " << count << std::endl;
         return ret;
 }
 
@@ -346,9 +346,6 @@ cv::Mat makeChain(const cv::Mat & img, const cv::Mat & pente){
                 float middleLeftNeighbor = ret.at<float>(i, j-1);
                 float topLeftNeighbor = ret.at<float>(i-1, j-1);
                 float topMiddleNeighbor = ret.at<float>(i-1, j);
-                /*if(topRightNeighbor > 100 || middleRightNeighbor > 100 || bottomRightNeighbor > 100
-                    || bottomMiddleNeighbor > 100 || bottomLeftNeighbor > 100 || middleLeftNeighbor > 100
-                    || topLeftNeighbor > 100 || topMiddleNeighbor > 100)  ret.at<float>(i, j) = 90;*/
                 if(pente.at<float>(i, j) == 0 || pente.at<float>(i, j) == 120){
                     if((middleLeftNeighbor >= 90 || topLeftNeighbor >= 90 || bottomLeftNeighbor >= 90) 
                         && (middleRightNeighbor >= 90 || topRightNeighbor >= 90 || bottomRightNeighbor >= 90)) ret.at<float>(i, j) = 90;
@@ -361,5 +358,94 @@ cv::Mat makeChain(const cv::Mat & img, const cv::Mat & pente){
             }
         }
     }
-    return ret;
+    cv::Mat tret = ret.clone();
+    for(int i = 1; i < ret.rows-1; ++i) {
+        for(int j = 1; j < ret.cols-1; ++j) {
+            float n1 = ret.at<float>(i-1, j+1);
+            float n2 = ret.at<float>(i, j+1);
+            float n3 = ret.at<float>(i+1, j+1);
+            float n4 = ret.at<float>(i+1, j);
+            float n5 = ret.at<float>(i+1, j-1);
+            float n6 = ret.at<float>(i, j-1);
+            float n7 = ret.at<float>(i-1, j-1);
+            float n8 = ret.at<float>(i-1, j);
+            if((n1+n2+n3+n4+n5+n6+n7+n8) < 1) tret.at<float>(i, j) = 0;
+        }
+    }
+
+    return tret;
+}
+
+
+
+cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente){
+    cv::Mat ret = img.clone();
+    for(int i = 1; i < img.rows-1; ++i) {
+            for(int j = 0; j < img.cols-1; ++j) {
+                if(img.at<float>(i, j) != 0) {
+                    float topRightNeighbor = img.at<float>(i-1, j+1);
+                    float middleRightNeighbor = img.at<float>(i, j+1);
+                    float bottomRightNeighbor = img.at<float>(i+1, j+1);
+                    float bottomLeftNeighbor = img.at<float>(i+1, j-1);
+                    float bottomMiddleNeighbor = img.at<float>(i+1, j);
+
+                    if(j+2 < img.cols && i-2 > 0 && i+2 < img.rows && j-2 > 0){
+                        if (((pente.at<float>(i, j) >= 30 && pente.at<float>(i, j) <= 60) || (pente.at<float>(i, j) >= 150 && pente.at<float>(i, j) <= 180))){
+                            if(topRightNeighbor < img.at<float>(i, j)){
+                                float nextTopRightNeighbor = img.at<float>(i-2, j+2);
+                                float nextMiddleRightNeighbor = img.at<float>(i-1, j+2);
+                                float nextBottomRightNeighbor = img.at<float>(i, j+2);
+                                if(nextTopRightNeighbor > topRightNeighbor || nextBottomRightNeighbor > topRightNeighbor ||nextMiddleRightNeighbor > topRightNeighbor)
+                                ret.at<float>(i-1, j+1) = img.at<float>(i, j);
+                            }
+                            if(middleRightNeighbor < img.at<float>(i, j)){
+                                float nextTopRightNeighbor = img.at<float>(i-1, j+2);
+                                float nextMiddleRightNeighbor = img.at<float>(i, j+2);
+                                float nextBottomRightNeighbor = img.at<float>(i+1, j+2);
+                                if(nextTopRightNeighbor > middleRightNeighbor || nextBottomRightNeighbor > middleRightNeighbor ||nextMiddleRightNeighbor > middleRightNeighbor)
+                                ret.at<float>(i, j+1) = img.at<float>(i, j);
+                            }
+                            if(bottomRightNeighbor < img.at<float>(i, j)){
+                                float nextTopRightNeighbor = img.at<float>(i, j+2);
+                                float nextMiddleRightNeighbor = img.at<float>(i+1, j+2);
+                                float nextBottomRightNeighbor = img.at<float>(i+2, j+2);
+                                if(nextTopRightNeighbor > bottomRightNeighbor || nextBottomRightNeighbor > bottomRightNeighbor ||nextMiddleRightNeighbor > bottomRightNeighbor)
+                                ret.at<float>(i+1, j+1) = img.at<float>(i, j);
+                            }
+                        }else{
+                            if(bottomLeftNeighbor < img.at<float>(i, j)){
+                                float nextBottomLeftNeighbor = img.at<float>(i+2, j-2);
+                                float nextBottomMiddleNeighbor = img.at<float>(i+2, j-1);
+                                float nextBottomRightNeighbor = img.at<float>(i+2, j);
+                                if(nextBottomLeftNeighbor > bottomLeftNeighbor || nextBottomMiddleNeighbor > bottomLeftNeighbor || nextBottomLeftNeighbor > bottomLeftNeighbor)
+                                ret.at<float>(i+1, j-1) = img.at<float>(i, j);
+                            }
+                            if(bottomMiddleNeighbor < img.at<float>(i, j)){
+                                float nextBottomLeftNeighbor = img.at<float>(i+2, j-1);
+                                float nextBottomMiddleNeighbor = img.at<float>(i+2, j);
+                                float nextBottomRightNeighbor = img.at<float>(i+2, j+1);
+                                if(nextBottomLeftNeighbor > bottomMiddleNeighbor || nextBottomMiddleNeighbor > bottomMiddleNeighbor || nextBottomLeftNeighbor > bottomMiddleNeighbor)
+                                ret.at<float>(i+1, j) = img.at<float>(i, j);
+                            }
+                            if(bottomRightNeighbor < img.at<float>(i, j)){
+                                float nextBottomLeftNeighbor = img.at<float>(i+2, j);
+                                float nextBottomMiddleNeighbor = img.at<float>(i+2, j+1);
+                                float nextBottomRightNeighbor = img.at<float>(i+2, j+2);
+                                if(nextBottomLeftNeighbor > bottomRightNeighbor || nextBottomMiddleNeighbor > bottomRightNeighbor || nextBottomLeftNeighbor > bottomRightNeighbor)
+                                ret.at<float>(i+1, j+1) = img.at<float>(i, j);
+                            }
+                        }
+                        
+                        
+                    }
+                }
+            }
+        }
+        for(int i = 1; i < ret.rows-1; ++i) {
+            for(int j = 1; j < ret.cols-1; ++j) {
+                if(ret.at<float>(i, j) > 80) ret.at<float>(i, j) = 255;
+            }
+        }
+
+        return ret;
 }
