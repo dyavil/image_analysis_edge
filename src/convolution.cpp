@@ -1,12 +1,21 @@
 #include "convolution.hpp"
 
 // Constrcuteur
-Convolution::Convolution(std::vector<std::vector<float>> _conv, int _width, int _height) : conv(_conv), width(_width), height(_height), coeff(0) {
+Convolution::Convolution(std::vector<std::vector<float>> filter) : conv(filter), coeff(0) {
     
-    // Check filtre impair
-    assert(_width % 2 == 1);
-    assert(_height % 2 == 1);
+    // Taille de la convolution
+    width = filter.size();
+    height = filter[0].size();
     
+    // Vérification du filtre
+    for(unsigned int i = 1; i < width; ++i) {
+        if(filter[i].size() != width) {
+            std::cout << "Taille de filtre incorrecte" << std::endl;
+            std::exit(1);
+        }
+    }
+    
+    // Calcul du coefficient
     for(int x = 0; x < width; ++x) {
         for(int y = 0; y < height; ++y) {
             if(conv[x][y] > 0) { coeff += conv[x][y]; }
