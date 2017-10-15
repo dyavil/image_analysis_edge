@@ -194,6 +194,61 @@ cv::Mat hysteresis(const cv::Mat & img, float seuilBas, float seuilHaut) {
     return ret;
 }
 
+
+cv::Mat autoHysteresis(const cv::Mat & img){    
+    cv::Mat mean, deviation;
+    cv::Mat ret = img.clone();
+    meanStdDev(img, mean, deviation);
+    ret = hysteresis(img, deviation.at<double>(0, 0), deviation.at<double>(0, 0)+30);
+    return ret;
+}
+
+
+cv::Mat seuilGlob(const cv::Mat & img, int type){
+    cv::Mat mean, deviation;
+    meanStdDev(img, mean, deviation);
+    cv::Mat ret = img.clone();
+    double val;
+    if(type == 0) val = deviation.at<double>(0, 0);
+    else val = mean.at<double>(0, 0);
+    for(int x = 0; x < img.rows; x++) {
+        for(int y = 0; y < img.cols; y++) {
+            if(img.at<float>(x, y) >= val) { 
+                ret.at<float>(x, y) = 255; 
+            }else {
+                ret.at<float>(x, y) = 0; 
+            }
+        }
+    }
+    
+    return ret;
+}
+
+
+cv::Mat seuilLoc(const cv::Mat & img, int n){
+    cv::Mat ret = img.clone();
+    for(int x = n/2; x < img.rows-n/2; x++) {
+        for(int y = n/2; y < img.cols-n/2; y++) {
+            float tot = 0;
+            for (int i = -n/2; i <= n/2; ++i)
+            {
+                for (int j = -n/2; j <= n/2; ++j)
+                {
+                    tot += img.at<float>(x+i, y+j);
+                }
+            }
+            //std::cout << x << " " << y << std::endl;
+            float val = tot/(n*n);
+            if(img.at<float>(x, y) >= val) { 
+                ret.at<float>(x, y) = 255; 
+            }else {
+                ret.at<float>(x, y) = 0; 
+            }
+        }
+    }
+    return ret;
+}
+
 /*
 // Réduit les contours
 cv::Mat refineContours(const cv::Mat & img, int largeur) {

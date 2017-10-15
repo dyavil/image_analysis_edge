@@ -27,6 +27,15 @@ bool hasNeighbor(const cv::Mat & img, float seuil, unsigned int x, unsigned int 
 // Applique l'hystérésis sur une image en niveaux de gris
 cv::Mat hysteresis(const cv::Mat & img, float seuilBas = 5, float seuilHaut = 10);
 
+//seuillage auto d'apres l'ecart type
+cv::Mat autoHysteresis(const cv::Mat & img);
+
+//seuil fixe, global (moyenne ou ecart-type (par defaut))
+cv::Mat seuilGlob(const cv::Mat & img, int type=0);
+
+//seuil local, moyenne de matrice n*n autour du point
+cv::Mat seuilLoc(const cv::Mat & img,int n=3);
+
 // Calcule une orientation générale du gradian
 void computePenteRange(cv::Mat & rawPente);
 
