@@ -51,7 +51,7 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
     std::vector<std::vector<float>> horizontalSobel = { {1, 2, 1}, {0, 0, 0}, {-1, -2, -1} };
     std::vector<std::vector<float>> verticalSobel = { {-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1} };
     
-    // Convolutions 
+    // Convolutions
     Convolution convHorizontalPrewitt(horizontalPrewitt);
     Convolution convVerticalPrewitt(verticalPrewitt);
     Convolution convHorizontalSobel(horizontalSobel);
@@ -249,90 +249,53 @@ cv::Mat seuilLoc(const cv::Mat & img, int n){
     return ret;
 }
 
-/*
+
 // Réduit les contours
-cv::Mat refineContours(const cv::Mat & img, int largeur) {
-    cv::Mat imgV, imgH;
-    cv::Mat ret = img.clone();
-    
+void refineContours(cv::Mat & img, int largeur) {
     std::vector<std::vector<float>> verticalRight = { {-1, 1, 0} };
     std::vector<std::vector<float>> horizontalUp = { {0}, {1}, {-1} };
     std::vector<std::vector<float>> verticalLeft = { {0, 1, -1} };
     std::vector<std::vector<float>> horizontalDown = { {-1}, {1}, {0} };
     
-    Convolution convVR(verticalRight, 1, 3);
-    Convolution convHU(horizontalUp, 3, 1);
-    Convolution convVL(verticalLeft, 1, 3);
-    Convolution convHD(horizontalDown, 3, 1);
+    Convolution convVR(verticalRight);
+    Convolution convHU(horizontalUp);
+    Convolution convVL(verticalLeft);
+    Convolution convHD(horizontalDown);
     
     // On itère selon la largeur max des contours
-    for(int i = 0; i < (largeur-1)/2; ++i) {
+    for(int i = 0; i < 3; ++i) {
+
         // 1ère passe : supprime les pixels a droite/dessus
-        imgV = convVR.applyToGray(ret, false);
-        imgH = convHU.applyToGray(ret, false);
+        img = autoHysteresis(img);  
         
-        for(int y = 0; y < ret.rows; ++y) {
-            for(int x = 0; x < ret.cols; ++x) {
-                ret.at<uchar>(y, x) = std::max(imgV.at<uchar>(y, x), imgH.at<uchar>(y, x));
+        cv::Mat imgVR = img.clone();
+        cv::Mat imgHU = img.clone();
+        
+        convVR.apply(imgVR);
+        convHU.apply(imgHU);
+        
+        for(int y = 0; y < img.rows; ++y) {
+            for(int x = 0; x < img.cols; ++x) {
+                img.at<float>(y, x) = std::max(imgVR.at<float>(y, x), imgHU.at<float>(y, x));
             }
         }
         
         // 2ème passe : supprime les pixels a gauche/dessous
-        imgV = convVL.applyToGray(ret, false);
-        imgH = convHD.applyToGray(ret, false);
+        img = autoHysteresis(img);
         
-        for(int y = 0; y < ret.rows; ++y) {
-            for(int x = 0; x < ret.cols; ++x) {
-                ret.at<uchar>(y, x) = std::max(imgV.at<uchar>(y, x), imgH.at<uchar>(y, x));
+        cv::Mat imgVL = img.clone();
+        cv::Mat imgHD = img.clone();
+        
+        convVL.apply(imgVL);
+        convHD.apply(imgHD);
+        
+        for(int y = 0; y < img.rows; ++y) {
+            for(int x = 0; x < img.cols; ++x) {
+                img.at<float>(y, x) = std::max(imgVL.at<float>(y, x), imgHD.at<float>(y, x));
             }
         }
     }
-    
-    return ret;
 }
-
-// Réduit les contours verticaux
-cv::Mat ThinVertical(const cv::Mat & img) {
-    cv::Mat ret = img.clone();
-    
-    for(int i = 0; i < img.rows; ++i) {
-        for(int j = 0; j < img.cols; ++j) {
-            if(img.at<uchar>(i, j) != 0) {
-                uchar downNeighbor = img.at<uchar>(i, j-1);;
-                uchar upNeighbor = img.at<uchar>(i, j+1);;
-                int p1 = img.at<uchar>(i, j) - downNeighbor;
-                int p2 = img.at<uchar>(i, j) - upNeighbor;
-                if(p1 < 0 || p2 < 0)  {
-                    ret.at<uchar>(i, j) = 0;
-                }
-            }
-        }
-    }
-    
-    return ret;
-} 
-
-// Réduit les contours horizontaux
-cv::Mat ThinHorizontal(const cv::Mat & img) {
-        cv::Mat ret = img.clone();
-        
-        for(int i = 0; i < img.rows; ++i) {
-            for(int j = 0; j < img.cols; ++j) {
-                if(img.at<uchar>(i, j) != 0) {
-                    uchar leftNeighbor = img.at<uchar>(i-1, j);
-                    uchar rightNeighbor = img.at<uchar>(i+1, j);;
-                    int p1 = img.at<uchar>(i, j) - leftNeighbor;
-                    int p2 = img.at<uchar>(i, j) - rightNeighbor;
-                    if(p1 < 0 || p2 < 0)  {
-                        ret.at<uchar>(i, j) = 0;
-                    }
-                }
-            }
-        }
-        
-        return ret;
-}
-*/
 
 
 // Réduit les contours en fonction de leur pente

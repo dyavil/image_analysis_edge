@@ -4,11 +4,11 @@
 Convolution::Convolution(std::vector<std::vector<float>> filter) : conv(filter), coeff(0) {
     
     // Taille de la convolution
-    width = filter.size();
-    height = filter[0].size();
+    height = filter.size();
+    width = filter[0].size();
     
     // Vérification du filtre
-    for(unsigned int i = 1; i < width; ++i) {
+    for(unsigned int i = 1; i < height; ++i) {
         if(filter[i].size() != width) {
             std::cout << "Taille de filtre incorrecte" << std::endl;
             std::exit(1);
@@ -16,9 +16,9 @@ Convolution::Convolution(std::vector<std::vector<float>> filter) : conv(filter),
     }
     
     // Calcul du coefficient
-    for(int x = 0; x < width; ++x) {
-        for(int y = 0; y < height; ++y) {
-            if(conv[x][y] > 0) { coeff += conv[x][y]; }
+    for(int y = 0; y < height; ++y) {
+        for(int x = 0; x < width; ++x) {
+            if(conv[y][x] > 0) { coeff += conv[y][x]; }
         }
     }
     
@@ -29,8 +29,8 @@ Convolution::Convolution(std::vector<std::vector<float>> filter) : conv(filter),
 void Convolution::apply(cv::Mat & img, bool normalize) {
     
     cv::Mat temp;
-    int midW = width / 2;
     int midH = height / 2;
+    int midW = width / 2;
     int nbChannels = img.channels();
     
     switch(nbChannels) {
@@ -42,9 +42,9 @@ void Convolution::apply(cv::Mat & img, bool normalize) {
 
                     float gray = 0;
                     
-                    for(int i = -midW; i < midW + 1; ++i) {
-                        for(int j = -midH; j < midH + 1; ++j) {
-                            float c = conv[i + midW][j + midH];
+                    for(int j = -midH; j < midH + 1; ++j) {
+                        for(int i = -midW; i < midW + 1; ++i) {
+                            float c = conv[j + midH][i + midW];
                             float gPixel = 0;
                             if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
                                 gPixel = img.at<float>(y+j, x+i);
@@ -72,9 +72,9 @@ void Convolution::apply(cv::Mat & img, bool normalize) {
                     float green = 0;
                     float red = 0; 
 
-                    for(int i = -midW; i < midW + 1; ++i) {
-                        for(int j = -midH; j < midH + 1; ++j) {
-                            float c = conv[i + midW][j + midH];
+                    for(int j = -midH; j < midH + 1; ++j) {
+                        for(int i = -midW; i < midW + 1; ++i) {
+                            float c = conv[j + midH][i + midW];
                             cv::Vec3f rgbPixel = cv::Vec3f(0, 0, 0);
                             if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
                                 rgbPixel = img.at<cv::Vec3f>(y+j, x+i);
@@ -96,6 +96,6 @@ void Convolution::apply(cv::Mat & img, bool normalize) {
             break;
         }
     }
-    
+
     img = temp; 
 }
