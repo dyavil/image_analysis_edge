@@ -74,26 +74,43 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
     switch(nbChannels) {
         case 1: {
             float max = 0;
-            float min = 0;
+            float min = 500;
+
+            float max1 = 0;
+            float min1 = 500;
+            int count1 = 0;
             for(int y = 0; y < img.rows; ++y) {
                 for(int x = 0; x < img.cols; ++x) {
                     img.at<float>(y, x) = sqrt(imgV.at<float>(y, x)*imgV.at<float>(y, x) + imgH.at<float>(y, x)*imgH.at<float>(y, x));
-
+                    int mtemp = 0;
+                    if((abs(imgH.at<float>(y, x)) - imgV.at<float>(y, x)) > 0) mtemp = 1;
                     //calul pente
-                    if(imgV.at<float>(y, x) == 0) {
+                    //if(imgV.at<float>(y, x) == 0 && imgH.at<float>(y, x) == 0) pente.at<float>(y, x) = ;
+                    /*if(imgV.at<float>(y, x) == 0) {
                         pente.at<float>(y, x) = -PI/2;
                     }
                     else if(imgH.at<float>(y, x) == 0) pente.at<float>(y, x) = 0;
                     else {
-                        pente.at<float>(y, x) = (atan(imgH.at<float>(y, x)/imgV.at<float>(y, x)));
-                    }
-                    pente.at<float>(y, x) = pente.at<float>(y, x)* 180/PI;
+                        pente.at<float>(y, x) = (atan2(imgH.at<float>(y, x), imgV.at<float>(y, x)));
+                    }*/
+                    float p1 = (atan2(imgH.at<float>(y, x), imgV.at<float>(y, x)));
+                    float p2 = (atan2(imgV.at<float>(y, x), imgH.at<float>(y, x)));
+                    p1 = p1 * (180/PI);
+                    p2 = p2 * (180/PI);
+                    //std::cout << p1 << ", " << p2 << std::endl;
+                    pente.at<float>(y, x) = p1;
+                    //else pente.at<float>(y, x) = p2;
+                    //if(imgV.at<float>(y, x) == imgH.at<float>(y, x)) pente.at<float>(y, x) = 600;
+                    //pente.at<float>(y, x) = pente.at<float>(y, x)* (180/PI);
                     if(pente.at<float>(y, x) > max) max = pente.at<float>(y, x);
                     if(pente.at<float>(y, x) < min) min = pente.at<float>(y, x);
+                    if(p2 > max) max1 = p2;
+                    if(p2 < min) min1 = p2;
 
                 }
             }
             std::cout << "max " << max << ", min " << min << std::endl;
+            std::cout << "max1 " << max1 << ", min1 " << min1 << std::endl;
             computePenteRange(pente);
             break;
         }
@@ -127,27 +144,32 @@ void computePenteRange(cv::Mat & pente){
         for (int j = 0; j < pente.cols; ++j)
         {
             float tmp = pente.at<float>(i, j);
-            if(tmp >=0 && tmp < 45) pente.at<float>(i, j) = 0;
+            /*if(tmp >=0 && tmp < 45) pente.at<float>(i, j) = 0;
             else if(tmp >=45 && tmp < 90) pente.at<float>(i, j) = 30;
             else if(tmp >=90 && tmp < 135) pente.at<float>(i, j) = 60;
             else if(tmp >=135 && tmp <= 180) pente.at<float>(i, j) = 90;
             else if(tmp >=-45 && tmp < 0) pente.at<float>(i, j) = 120;
             else if(tmp >=-90 && tmp < -45) pente.at<float>(i, j) = 150;
             else if(tmp >=-135 && tmp < -90) pente.at<float>(i, j) = 180;
-            else if(tmp >=-180 && tmp < -135) pente.at<float>(i, j) = 210;
+            else if(tmp >=-180 && tmp < -135) pente.at<float>(i, j) = 210;*/
             //moin efficace....va savoir pk
-            /*if(tmp >=-22 && tmp < 23) pente.at<float>(i, j) = 0;
+            if(tmp >=-22 && tmp < 23) pente.at<float>(i, j) = 10;
             else if(tmp >=23 && tmp < 67) pente.at<float>(i, j) = 30;
             else if(tmp >=67 && tmp < 112) pente.at<float>(i, j) = 60;
             else if(tmp >=112 && tmp < 158) pente.at<float>(i, j) = 90;
             else if(tmp >=158 || tmp < -158) pente.at<float>(i, j) = 120;
             else if(tmp >=-158 && tmp < -112) pente.at<float>(i, j) = 150;
             else if(tmp >=-112 && tmp < -67) pente.at<float>(i, j) = 180;
-            else if(tmp >=-67 && tmp < -22) pente.at<float>(i, j) = 210;*/
-            else std::cout << "zarb" << std::endl;
+            else if(tmp >=-67 && tmp < -22) pente.at<float>(i, j) = 210;
+            else std::cout << "zarb" << std::endl;;
         }
     }
 }
+
+void getRangeVal(float angle){
+
+}
+
 
 
 // Indique si un pixel d'une image binaire possède un voisin
@@ -155,8 +177,10 @@ bool hasNeighbor(const cv::Mat & img, float seuil, unsigned int x, unsigned int 
     for(int i = -1; i < 2; ++i){
         for(int j = -1; j < 2; ++j){
             if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
-                if(img.at<float>(x+i, y+j) > seuil){
-                    return true;
+                if(!(i == 0 && j == 0)){
+                    if(img.at<float>(x+i, y+j) > seuil){
+                        return true;
+                    }
                 }
             }
         }        
@@ -249,261 +273,311 @@ cv::Mat seuilLoc(const cv::Mat & img, int n){
     return ret;
 }
 
-/*
-// Réduit les contours
-cv::Mat refineContours(const cv::Mat & img, int largeur) {
-    cv::Mat imgV, imgH;
-    cv::Mat ret = img.clone();
-    
-    std::vector<std::vector<float>> verticalRight = { {-1, 1, 0} };
-    std::vector<std::vector<float>> horizontalUp = { {0}, {1}, {-1} };
-    std::vector<std::vector<float>> verticalLeft = { {0, 1, -1} };
-    std::vector<std::vector<float>> horizontalDown = { {-1}, {1}, {0} };
-    
-    Convolution convVR(verticalRight, 1, 3);
-    Convolution convHU(horizontalUp, 3, 1);
-    Convolution convVL(verticalLeft, 1, 3);
-    Convolution convHD(horizontalDown, 3, 1);
-    
-    // On itère selon la largeur max des contours
-    for(int i = 0; i < (largeur-1)/2; ++i) {
-        // 1ère passe : supprime les pixels a droite/dessus
-        imgV = convVR.applyToGray(ret, false);
-        imgH = convHU.applyToGray(ret, false);
-        
-        for(int y = 0; y < ret.rows; ++y) {
-            for(int x = 0; x < ret.cols; ++x) {
-                ret.at<uchar>(y, x) = std::max(imgV.at<uchar>(y, x), imgH.at<uchar>(y, x));
-            }
-        }
-        
-        // 2ème passe : supprime les pixels a gauche/dessous
-        imgV = convVL.applyToGray(ret, false);
-        imgH = convHD.applyToGray(ret, false);
-        
-        for(int y = 0; y < ret.rows; ++y) {
-            for(int x = 0; x < ret.cols; ++x) {
-                ret.at<uchar>(y, x) = std::max(imgV.at<uchar>(y, x), imgH.at<uchar>(y, x));
-            }
-        }
-    }
-    
-    return ret;
-}
 
-// Réduit les contours verticaux
-cv::Mat ThinVertical(const cv::Mat & img) {
-    cv::Mat ret = img.clone();
-    
-    for(int i = 0; i < img.rows; ++i) {
-        for(int j = 0; j < img.cols; ++j) {
-            if(img.at<uchar>(i, j) != 0) {
-                uchar downNeighbor = img.at<uchar>(i, j-1);;
-                uchar upNeighbor = img.at<uchar>(i, j+1);;
-                int p1 = img.at<uchar>(i, j) - downNeighbor;
-                int p2 = img.at<uchar>(i, j) - upNeighbor;
-                if(p1 < 0 || p2 < 0)  {
-                    ret.at<uchar>(i, j) = 0;
+cv::Mat newThin(const cv::Mat & img, const cv::Mat & pente, cv::Mat & hyst){
+    cv::Mat ret = hyst.clone();
+    for(int i = 1; i < img.rows-1; ++i) {
+        for(int j = 1; j < img.cols-1; ++j) {
+            if(img.at<float>(i, j) > 0){
+
+                //valeur voisins
+                float n1 = img.at<float>(i-1, j-1);
+                float n2 = img.at<float>(i-1, j);
+                float n3 = img.at<float>(i-1, j+1);
+                float n4 = img.at<float>(i, j-1);
+                float n5 = img.at<float>(i, j+1);
+                float n6 = img.at<float>(i+1, j-1);
+                float n7 = img.at<float>(i+1, j);
+                float n8 = img.at<float>(i+1, j+1);
+
+                //valeur locales
+                float plocal = pente.at<float>(i, j);
+                float local = img.at<float>(i, j);
+
+                if(plocal == 10  || plocal == 120){
+                    if(n2 >local) ret.at<float>(i, j) = 0;
+                
+                    if(n7 > local) ret.at<float>(i, j) = 0;
+                    
+                }else if(plocal == 30 || plocal == 150){
+                    if(n3 > local) ret.at<float>(i, j) = 0;
+                
+                    if(n6 > local) ret.at<float>(i, j) = 0;
+                }else if(plocal == 60 || plocal == 180){
+                    if(n5 > local) ret.at<float>(i, j) = 0;
+                    if(n4 > local) ret.at<float>(i, j) = 0;
+                }
+                else if(plocal == 90 || plocal == 210){
+                    if(n1 > local) ret.at<float>(i, j) = 0;
+                    if(n8 > local) ret.at<float>(i, j) = 0;
                 }
             }
         }
     }
-    
     return ret;
-} 
-
-// Réduit les contours horizontaux
-cv::Mat ThinHorizontal(const cv::Mat & img) {
-        cv::Mat ret = img.clone();
-        
-        for(int i = 0; i < img.rows; ++i) {
-            for(int j = 0; j < img.cols; ++j) {
-                if(img.at<uchar>(i, j) != 0) {
-                    uchar leftNeighbor = img.at<uchar>(i-1, j);
-                    uchar rightNeighbor = img.at<uchar>(i+1, j);;
-                    int p1 = img.at<uchar>(i, j) - leftNeighbor;
-                    int p2 = img.at<uchar>(i, j) - rightNeighbor;
-                    if(p1 < 0 || p2 < 0)  {
-                        ret.at<uchar>(i, j) = 0;
-                    }
-                }
-            }
-        }
-        
-        return ret;
 }
-*/
 
-
-// Réduit les contours en fonction de leur pente
-cv::Mat ThinAll(const cv::Mat & img, const cv::Mat & pente){
-    cv::Mat ret = img.clone();
-        int count = 0;
-        int count2 = 0;
-        int count3 = 0;
-        for(int i = 1; i < img.rows-1; ++i) {
-            for(int j = 1; j < img.cols-1; ++j) {
-                if(img.at<float>(i, j) < 0) std::cout << "below" << std::endl;
-                float n1 = pente.at<float>(i-1, j-1);
-                float n2 = pente.at<float>(i-1, j);
-                float n3 = pente.at<float>(i-1, j+1);
-                float n4 = pente.at<float>(i, j-1);
-                float n5 = pente.at<float>(i, j+1);
-                float n6 = pente.at<float>(i+1, j-1);
-                float n7 = pente.at<float>(i+1, j);
-                float n8 = pente.at<float>(i+1, j+1);
-                //test pente puis module
-                count2++;
-                if(pente.at<float>(i, j) == n1) {
-                    if(img.at<float>(i-1, j-1) >= img.at<float>(i, j)) {
-                        ret.at<float>(i, j)=0;
-                        count3++;
-                    }
-                } 
-                else if(pente.at<float>(i, j) == n2){
-                    if(img.at<float>(i-1, j) >= img.at<float>(i, j)){
-                        ret.at<float>(i, j)=0;
-                        count3++;
-                    } 
-                } 
-                else if(pente.at<float>(i, j) == n3){
-                    if(img.at<float>(i-1, j+1) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
-                } 
-                else if(pente.at<float>(i, j) == n4){
-                    if(img.at<float>(i, j-1) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
-                } 
-                else if(pente.at<float>(i, j) == n5){
-                    if(img.at<float>(i, j+1) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
-                } 
-                else if(pente.at<float>(i, j) == n6){
-                    if(img.at<float>(i+1, j-1) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
-                }
-                else if(pente.at<float>(i, j) == n7){
-                    if(img.at<float>(i+1, j) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
-                } 
-                else if(pente.at<float>(i, j) == n8) {
-                    if(img.at<float>(i+1, j+1) >= img.at<float>(i, j)) ret.at<float>(i, j)=0;
-                }
-                else count++;
-            }
-        }
-         //std::cout << count2 << " count " << count << std::endl;
-        return ret;
-}
 
 cv::Mat makeChain(const cv::Mat & img, const cv::Mat & pente){
     cv::Mat ret = img.clone();
     for(int i = 1; i < img.rows-1; ++i) {
         for(int j = 1; j < img.cols-1; ++j) {
-            if(img.at<float>(i, j) != 0) {
-                float topRightNeighbor = ret.at<float>(i-1, j+1);
-                float middleRightNeighbor = ret.at<float>(i, j+1);
-                float bottomRightNeighbor = ret.at<float>(i+1, j+1);
-                float bottomMiddleNeighbor = ret.at<float>(i+1, j);
-                float bottomLeftNeighbor = ret.at<float>(i+1, j-1);
-                float middleLeftNeighbor = ret.at<float>(i, j-1);
-                float topLeftNeighbor = ret.at<float>(i-1, j-1);
-                float topMiddleNeighbor = ret.at<float>(i-1, j);
-                if(pente.at<float>(i, j) == 0 || pente.at<float>(i, j) == 120){
-                    if((middleLeftNeighbor >= 90 || topLeftNeighbor >= 90 || bottomLeftNeighbor >= 90) 
-                        && (middleRightNeighbor >= 90 || topRightNeighbor >= 90 || bottomRightNeighbor >= 90)) ret.at<float>(i, j) = 90;
-                }
-                else if(pente.at<float>(i, j) == 30 || pente.at<float>(i, j) == 150){                  
-                    if((topMiddleNeighbor >= 90 || topLeftNeighbor >= 90 || topRightNeighbor >= 90) 
-                        && (bottomLeftNeighbor >= 90 || bottomMiddleNeighbor >= 90 || bottomRightNeighbor >= 90)) ret.at<float>(i, j) = 90;
-                }
+            if(img.at<float>(i, j) > 0){
+                float n1 = img.at<float>(i-1, j-1);
+                float n2 = img.at<float>(i-1, j);
+                float n3 = img.at<float>(i-1, j+1);
+                float n4 = img.at<float>(i, j-1);
+                float n5 = img.at<float>(i, j+1);
+                float n6 = img.at<float>(i+1, j-1);
+                float n7 = img.at<float>(i+1, j);
+                float n8 = img.at<float>(i+1, j+1);
 
+                //valeur locales
+                float plocal = pente.at<float>(i, j);
+                float local = img.at<float>(i, j);
+
+                if((n1+n2+n3+n4+n5+n6+n7+n8) > 255) {
+                    if(((n1+n2 )-(n3+n4+n5+n6+n7+n8)) > 255) ret.at<float>(i, j) = 255;
+                    else if(((n3+n2 )-(n1+n4+n5+n6+n7+n8)) > 255) ret.at<float>(i, j) = 255;
+                    else if(((n7+n6 )-(n1+n4+n5+n2+n3+n8)) > 255) ret.at<float>(i, j) = 255;
+                    else if(((n7+n8 )-(n1+n4+n5+n6+n2+n3)) > 255) ret.at<float>(i, j) = 255;
+                    else if(((n1+n4 )-(n2+n3+n5+n6+n7+n8)) > 255) ret.at<float>(i, j) = 255;
+                    else if(((n3+n5 )-(n1+n2+n4+n6+n7+n8)) > 255) ret.at<float>(i, j) = 255;
+                    else if(((n4+n6 )-(n1+n2+n3+n5+n7+n8)) > 255) ret.at<float>(i, j) = 255;
+                    else if(((n5+n8 )-(n1+n2+n3+n4+n6+n7)) > 255) ret.at<float>(i, j) = 255;
+                    else ret.at<float>(i, j) = 90;
+                }
             }
         }
     }
-    cv::Mat tret = ret.clone();
-    for(int i = 1; i < ret.rows-1; ++i) {
-        for(int j = 1; j < ret.cols-1; ++j) {
-            float n1 = ret.at<float>(i-1, j+1);
-            float n2 = ret.at<float>(i, j+1);
-            float n3 = ret.at<float>(i+1, j+1);
-            float n4 = ret.at<float>(i+1, j);
-            float n5 = ret.at<float>(i+1, j-1);
-            float n6 = ret.at<float>(i, j-1);
-            float n7 = ret.at<float>(i-1, j-1);
-            float n8 = ret.at<float>(i-1, j);
-            if((n1+n2+n3+n4+n5+n6+n7+n8) < 1) tret.at<float>(i, j) = 0;
-        }
-    }
+    
 
-    return tret;
+    return ret;
 }
 
+bool recurNext(const cv::Mat & seuil, const cv::Mat & img, cv::Mat & ret, int i, int j, int dir, int & profondeur){
+    if(!(j+1 < ret.cols && i+1 < ret.rows)) return false;
+    float n1 = img.at<float>(i-1, j-1);
+    float n2 = img.at<float>(i-1, j);
+    float n3 = img.at<float>(i-1, j+1);
+    float n4 = img.at<float>(i, j-1);
+    float n5 = img.at<float>(i, j+1);
+    float n6 = img.at<float>(i+1, j-1);
+    float n7 = img.at<float>(i+1, j);
+    float n8 = img.at<float>(i+1, j+1);
+    int iinext;
+    int ijnext;
+    float next = 0;
+    if(dir == 60){
+        //check n1, n2, n3
+        next = n1;
+        iinext = i-1;
+        ijnext = j-1;
+        if(n2 > next) {
+            next = n2;                
+            iinext = i-1;
+            ijnext = j;
+        }
+        if(n3 > next){
+            next = n3;            
+            iinext = i-1;
+            ijnext = j+1;
 
+        } 
 
-cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente){
+    }else if(dir == 90){
+        //check n2, n3, n5
+        next = n2;
+        iinext = i-1;
+        ijnext = j;
+        if(n3 > next) {
+            next = n3;                
+            iinext = i-1;
+            ijnext = j+1;
+        }
+        if(n5 > next){
+            next = n5;            
+            iinext = i;
+            ijnext = j+1;
+
+        } 
+    }else if(dir == 120){
+        //check n3 n5 n8
+        next = n3;
+        iinext = i-1;
+        ijnext = j+1;
+        if(n5 > next) {
+            next = n5;                
+            iinext = i;
+            ijnext = j+1;
+        }
+        if(n8 > next){
+            next = n8;            
+            iinext = i+1;
+            ijnext = j+1;
+
+        } 
+    }
+    else if(dir == 150){
+        //check n5 n8 n7
+        next = n5;
+        iinext = i;
+        ijnext = j+1;
+        if(n8 > next) {
+            next = n8;                
+            iinext = i+1;
+            ijnext = j+1;
+        }
+        if(n7 > next){
+            next = n7;            
+            iinext = i+1;
+            ijnext = j;
+
+        } 
+    }else if(dir == 180){
+        //check n6, n7, n8
+        next = n6;
+        iinext = i+1;
+        ijnext = j-1;
+        if(n7 > next) {
+            next = n7;                
+            iinext = i+1;
+            ijnext = j;
+        }
+        if(n8 > next){
+            next = n8;            
+            iinext = i+1;
+            ijnext = j+1;
+
+        } 
+    }else if(dir == 210){
+        //check n4 n6 n7
+        next = n4;
+        iinext = i;
+        ijnext = j-1;
+        if(n6 > next) {
+            next = n6;                
+            iinext = i+1;
+            ijnext = j-1;
+        }
+        if(n7 > next){
+            next = n7;            
+            iinext = i+1;
+            ijnext = j;
+
+        } 
+    }else if(dir == 10){
+        //check n1 n4 n6
+        next = n1;
+        iinext = i-1;
+        ijnext = j-1;
+        if(n4 > next) {
+            next = n4;                
+            iinext = i;
+            ijnext = j-1;
+        }
+        if(n6 > next){
+            next = n6;            
+            iinext = i+1;
+            ijnext = j-1;
+
+        } 
+    }else if(dir == 30){
+        //check n4 n1 n2
+        next = n4;
+        iinext = i;
+        ijnext = j-1;
+        if(n1 > next) {
+            next = n1;                
+            iinext = i-1;
+            ijnext = j-1;
+        }
+        if(n2 > next){
+            next = n2;            
+            iinext = i-1;
+            ijnext = j;
+
+        } 
+    }
+
+    if(!(ijnext+1 < ret.cols && iinext+1 < ret.rows) || next < 15) return false;
+    float s1 = seuil.at<float>(iinext-1, ijnext-1);
+    float s2 = seuil.at<float>(iinext-1, ijnext);
+    float s3 = seuil.at<float>(iinext-1, ijnext+1);
+    float s4 = seuil.at<float>(iinext, ijnext-1);
+    float s5 = seuil.at<float>(iinext, ijnext+1);
+    float s6 = seuil.at<float>(iinext+1, ijnext-1);
+    float s7 = seuil.at<float>(iinext+1, ijnext);
+    float s8 = seuil.at<float>(iinext+1, ijnext+1);
+    if(profondeur > 0 && (s1+s2+s3+s4+s5+s6+s7+s8) > 0) return true;
+    else {
+        profondeur++;
+        
+    }
+    if(recurNext(seuil,img, ret, iinext, ijnext, dir, profondeur)) {
+        ret.at<float>(iinext, ijnext) = 255;
+        return true;
+    }
+
+    return false;
+}
+
+cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente, const cv::Mat & base){
     cv::Mat ret = img.clone();
     for(int i = 1; i < img.rows-1; ++i) {
-            for(int j = 0; j < img.cols-1; ++j) {
-                if(img.at<float>(i, j) != 0) {
-                    float topRightNeighbor = img.at<float>(i-1, j+1);
-                    float middleRightNeighbor = img.at<float>(i, j+1);
-                    float bottomRightNeighbor = img.at<float>(i+1, j+1);
-                    float bottomLeftNeighbor = img.at<float>(i+1, j-1);
-                    float bottomMiddleNeighbor = img.at<float>(i+1, j);
+        for(int j = 1; j < img.cols-1; ++j) {
+            if(img.at<float>(i, j)  == 255){
+                //valeur voisins
+                float n1 = img.at<float>(i-1, j-1);
+                float n2 = img.at<float>(i-1, j);
+                float n3 = img.at<float>(i-1, j+1);
+                float n4 = img.at<float>(i, j-1);
+                float n5 = img.at<float>(i, j+1);
+                float n6 = img.at<float>(i+1, j-1);
+                float n7 = img.at<float>(i+1, j);
+                float n8 = img.at<float>(i+1, j+1);
+                float b1 = base.at<float>(i-1, j-1);
+                float b2 = base.at<float>(i-1, j);
+                float b3 = base.at<float>(i-1, j+1);
+                float b4 = base.at<float>(i, j-1);
+                float b5 = base.at<float>(i, j+1);
+                float b6 = base.at<float>(i+1, j-1);
+                float b7 = base.at<float>(i+1, j);
+                float b8 = base.at<float>(i+1, j+1);
 
-                    if(j+2 < img.cols && i-2 > 0 && i+2 < img.rows && j-2 > 0){
-                        if (((pente.at<float>(i, j) >= 30 && pente.at<float>(i, j) <= 60) || (pente.at<float>(i, j) >= 150 && pente.at<float>(i, j) <= 180))){
-                            if(topRightNeighbor < img.at<float>(i, j)){
-                                float nextTopRightNeighbor = img.at<float>(i-2, j+2);
-                                float nextMiddleRightNeighbor = img.at<float>(i-1, j+2);
-                                float nextBottomRightNeighbor = img.at<float>(i, j+2);
-                                if(nextTopRightNeighbor > topRightNeighbor || nextBottomRightNeighbor > topRightNeighbor ||nextMiddleRightNeighbor > topRightNeighbor)
-                                ret.at<float>(i-1, j+1) = img.at<float>(i, j);
-                            }
-                            if(middleRightNeighbor < img.at<float>(i, j)){
-                                float nextTopRightNeighbor = img.at<float>(i-1, j+2);
-                                float nextMiddleRightNeighbor = img.at<float>(i, j+2);
-                                float nextBottomRightNeighbor = img.at<float>(i+1, j+2);
-                                if(nextTopRightNeighbor > middleRightNeighbor || nextBottomRightNeighbor > middleRightNeighbor ||nextMiddleRightNeighbor > middleRightNeighbor)
-                                ret.at<float>(i, j+1) = img.at<float>(i, j);
-                            }
-                            if(bottomRightNeighbor < img.at<float>(i, j)){
-                                float nextTopRightNeighbor = img.at<float>(i, j+2);
-                                float nextMiddleRightNeighbor = img.at<float>(i+1, j+2);
-                                float nextBottomRightNeighbor = img.at<float>(i+2, j+2);
-                                if(nextTopRightNeighbor > bottomRightNeighbor || nextBottomRightNeighbor > bottomRightNeighbor ||nextMiddleRightNeighbor > bottomRightNeighbor)
-                                ret.at<float>(i+1, j+1) = img.at<float>(i, j);
-                            }
-                        }else{
-                            if(bottomLeftNeighbor < img.at<float>(i, j)){
-                                float nextBottomLeftNeighbor = img.at<float>(i+2, j-2);
-                                float nextBottomMiddleNeighbor = img.at<float>(i+2, j-1);
-                                float nextBottomRightNeighbor = img.at<float>(i+2, j);
-                                if(nextBottomLeftNeighbor > bottomLeftNeighbor || nextBottomMiddleNeighbor > bottomLeftNeighbor || nextBottomLeftNeighbor > bottomLeftNeighbor)
-                                ret.at<float>(i+1, j-1) = img.at<float>(i, j);
-                            }
-                            if(bottomMiddleNeighbor < img.at<float>(i, j)){
-                                float nextBottomLeftNeighbor = img.at<float>(i+2, j-1);
-                                float nextBottomMiddleNeighbor = img.at<float>(i+2, j);
-                                float nextBottomRightNeighbor = img.at<float>(i+2, j+1);
-                                if(nextBottomLeftNeighbor > bottomMiddleNeighbor || nextBottomMiddleNeighbor > bottomMiddleNeighbor || nextBottomLeftNeighbor > bottomMiddleNeighbor)
-                                ret.at<float>(i+1, j) = img.at<float>(i, j);
-                            }
-                            if(bottomRightNeighbor < img.at<float>(i, j)){
-                                float nextBottomLeftNeighbor = img.at<float>(i+2, j);
-                                float nextBottomMiddleNeighbor = img.at<float>(i+2, j+1);
-                                float nextBottomRightNeighbor = img.at<float>(i+2, j+2);
-                                if(nextBottomLeftNeighbor > bottomRightNeighbor || nextBottomMiddleNeighbor > bottomRightNeighbor || nextBottomLeftNeighbor > bottomRightNeighbor)
-                                ret.at<float>(i+1, j+1) = img.at<float>(i, j);
-                            }
-                        }
-                        
-                        
-                    }
+                //valeur locales
+                float plocal = pente.at<float>(i, j);
+                float local = img.at<float>(i, j);
+
+
+                int p = 0;
+                recurNext(img, base, ret, i, j, plocal, p);
+                if(plocal == 60){
+                    //check n1, n2, n3
+                }else if(plocal == 90){
+                    //check n2, n3, n5
+                }else if(plocal == 120){
+                    //check n3 n5 n8
+                }
+                else if(plocal == 150){
+                    //check n5 n8 n7
+                }else if(plocal == 180){
+                    //check n6, n7, n8
+                }else if(plocal == 210){
+                    //check n4 n6 n7
+                }else if(plocal == 10){
+                    //check n1 n4 n6
+                }else if(plocal == 30){
+                    //check n4 n1 n2
                 }
             }
         }
-        for(int i = 1; i < ret.rows-1; ++i) {
-            for(int j = 1; j < ret.cols-1; ++j) {
-                if(ret.at<float>(i, j) > 80) ret.at<float>(i, j) = 255;
-            }
+    }
+    for(int i = 1; i < ret.rows-1; ++i) {
+        for(int j = 1; j < ret.cols-1; ++j){
+            if(ret.at<float>(i, j) > 0) ret.at<float>(i, j) = 255;
         }
+    }
 
-        return ret;
+    return ret;
 }

@@ -39,23 +39,12 @@ cv::Mat seuilLoc(const cv::Mat & img,int n=3);
 // Calcule une orientation générale du gradian
 void computePenteRange(cv::Mat & rawPente);
 
-cv::Mat ThinAll(const cv::Mat & img, const cv::Mat & pente);
+
+cv::Mat newThin(const cv::Mat & img, const cv::Mat & pente, cv::Mat & hyst);
 
 cv::Mat makeChain(const cv::Mat & img, const cv::Mat & pente);
 
-cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente);
+cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente, const cv::Mat & base);
 
-// Réduit les contours
-/*cv::Mat refineContours(const cv::Mat & img, int largeur = 3);
-/*
-// Réduit les contours verticaux
-cv::Mat ThinVertical(const cv::Mat & img);
-
-// Réduit les contours horizontaux
-cv::Mat ThinHorizontal(const cv::Mat & img);
-*/
-
-// Réduit les contours en fonction de leur pente
-cv::Mat ThinAll(const cv::Mat & img, const cv::Mat & pente);
 
 #endif // FONCTIONS
