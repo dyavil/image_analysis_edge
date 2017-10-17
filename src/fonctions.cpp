@@ -127,6 +127,7 @@ void computePenteRange(cv::Mat & pente){
         for (int j = 0; j < pente.cols; ++j)
         {
             float tmp = pente.at<float>(i, j);
+            /*
             if(tmp >=0 && tmp < 45) pente.at<float>(i, j) = 0;
             else if(tmp >=45 && tmp < 90) pente.at<float>(i, j) = 30;
             else if(tmp >=90 && tmp < 135) pente.at<float>(i, j) = 60;
@@ -135,15 +136,16 @@ void computePenteRange(cv::Mat & pente){
             else if(tmp >=-90 && tmp < -45) pente.at<float>(i, j) = 150;
             else if(tmp >=-135 && tmp < -90) pente.at<float>(i, j) = 180;
             else if(tmp >=-180 && tmp < -135) pente.at<float>(i, j) = 210;
+            */
             //moin efficace....va savoir pk
-            /*if(tmp >=-22 && tmp < 23) pente.at<float>(i, j) = 0;
+            if(tmp >=-22 && tmp < 23) pente.at<float>(i, j) = 0;
             else if(tmp >=23 && tmp < 67) pente.at<float>(i, j) = 30;
             else if(tmp >=67 && tmp < 112) pente.at<float>(i, j) = 60;
             else if(tmp >=112 && tmp < 158) pente.at<float>(i, j) = 90;
             else if(tmp >=158 || tmp < -158) pente.at<float>(i, j) = 120;
             else if(tmp >=-158 && tmp < -112) pente.at<float>(i, j) = 150;
             else if(tmp >=-112 && tmp < -67) pente.at<float>(i, j) = 180;
-            else if(tmp >=-67 && tmp < -22) pente.at<float>(i, j) = 210;*/
+            else if(tmp >=-67 && tmp < -22) pente.at<float>(i, j) = 210;
             else std::cout << "zarb" << std::endl;
         }
     }
@@ -152,11 +154,13 @@ void computePenteRange(cv::Mat & pente){
 
 // Indique si un pixel d'une image binaire possède un voisin
 bool hasNeighbor(const cv::Mat & img, float seuil, unsigned int x, unsigned int y) {
-    for(int i = -1; i < 2; ++i){
-        for(int j = -1; j < 2; ++j){
-            if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
-                if(img.at<float>(x+i, y+j) > seuil){
-                    return true;
+    for(int j = -1; j < 2; ++j) {
+        for(int i = -1; i < 2; ++i) {
+            if(!(i == 0 && j == 0)) {
+                if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
+                    if(img.at<float>(y+j, x+i) > seuil){
+                        return true;
+                    }
                 }
             }
         }        
@@ -251,19 +255,25 @@ cv::Mat seuilLoc(const cv::Mat & img, int n){
 
 
 // Réduit les contours
-void refineContours(cv::Mat & img, int largeur) {
+void refineContours(cv::Mat & img, bool diagonales, cv::Mat pente) {
     std::vector<std::vector<float>> verticalRight = { {-1, 1, 0} };
     std::vector<std::vector<float>> horizontalUp = { {0}, {1}, {-1} };
     std::vector<std::vector<float>> verticalLeft = { {0, 1, -1} };
     std::vector<std::vector<float>> horizontalDown = { {-1}, {1}, {0} };
+    std::vector<std::vector<float>> diag1 = { {-1, 0, 0}, {0, 1, 0}, {0, 0, 0} };
+    std::vector<std::vector<float>> diag2 = { {0, 0, -1}, {0, 1, 0}, {0, 0, 0} };
     
     Convolution convVR(verticalRight);
     Convolution convHU(horizontalUp);
     Convolution convVL(verticalLeft);
     Convolution convHD(horizontalDown);
+    Convolution convDiag1(diag1);
+    Convolution convDiag2(diag2);
+    
+    int largeurMax = 6;     // Largeur max des contours
     
     // On itère selon la largeur max des contours
-    for(int i = 0; i < 3; ++i) {
+    for(int i = 0; i < largeurMax/2; ++i) {
 
         // 1ère passe : supprime les pixels a droite/dessus
         img = autoHysteresis(img);  
@@ -294,7 +304,48 @@ void refineContours(cv::Mat & img, int largeur) {
                 img.at<float>(y, x) = std::max(imgVL.at<float>(y, x), imgHD.at<float>(y, x));
             }
         }
+        
+        // 3ème passe : supprime les pixels sur les diagonales
+        if(diagonales) {
+            img = autoHysteresis(img);
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
+                    if(pente.at<float>(y, x) == 210) {  // <-- TODO: Changer la valeur
+                        convDiag1.applyToPixel(img, y, x);
+                    }
+                }
+            }
+            
+            img = autoHysteresis(img);
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
+                    if(pente.at<float>(y, x) == 30) {   // <-- TODO: Changer la valeur
+                        convDiag2.applyToPixel(img, y, x);
+                    }
+                }
+            }
+        }
     }
+}
+
+
+// Supprime les pixels solitaires
+void suppressAlonePixels(cv::Mat img) {
+    cv::Mat temp = img.clone();
+
+    for(int y = 0; y < img.rows; ++y) {
+        for(int x = 0; x < img.cols; ++x) {
+        
+            if(!hasNeighbor(img, 254, x, y)) {
+                
+                img.at<float>(y, x) = 0;            
+            }
+            
+        
+        }
+    }
+    
+    img = temp;
 }
 
 

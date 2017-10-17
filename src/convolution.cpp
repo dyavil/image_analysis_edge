@@ -99,3 +99,26 @@ void Convolution::apply(cv::Mat & img, bool normalize) {
 
     img = temp; 
 }
+
+// Applique la convolution a un seul pixel d'une image
+void Convolution::applyToPixel(cv::Mat & img, unsigned int y, unsigned int x, bool normalize) {
+    
+    int midH = height / 2;
+    int midW = width / 2;
+    float gray = 0;
+    
+    for(int j = -midH; j < midH + 1; ++j) {
+        for(int i = -midW; i < midW + 1; ++i) {
+            float c = conv[j + midH][i + midW];
+            float gPixel = 0;
+            if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
+                gPixel = img.at<float>(y+j, x+i);
+            }
+            gray += c * gPixel;                      
+        }
+    }
+    
+    if(normalize) { gray /= coeff; }
+    
+    img.at<float>(y, x) = gray;  
+}
