@@ -65,8 +65,8 @@ int main(int argc, char ** argv) {
     // Affichage
     showImg(hyst3, "contoursPrewitt");
     showImg(imgLena1, "contoursSobel");
-    showImg(imgDst8, "affinement multi");
-    showImg(imgDst10, "completion contour");
+    showImg(imgDst10, "affinement multi");
+    showImg(imgDst8, "completion contour");
     //showImg(imgDst12, "seuil global - ecart type");
     //showImg(imgDst13, "seuil local");
     //showImg(hyst, "hysteresis avec non auto");

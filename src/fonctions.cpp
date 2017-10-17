@@ -46,12 +46,12 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
     // Filtres de Prewitt
     std::vector<std::vector<float>> horizontalPrewitt = { {1, 1, 1}, {0, 0, 0}, {-1, -1, -1} };
     std::vector<std::vector<float>> verticalPrewitt = { {-1, 0, 1}, {-1, 0, 1}, {-1, 0, 1} };
-    
+    //std::cout << ", " << verticalPrewitt[0][1] << std::endl;
     // Filtres de Sobel
     std::vector<std::vector<float>> horizontalSobel = { {1, 2, 1}, {0, 0, 0}, {-1, -2, -1} };
     std::vector<std::vector<float>> verticalSobel = { {-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1} };
     
-    // Convolutions 
+    // Convolutions
     Convolution convHorizontalPrewitt(horizontalPrewitt);
     Convolution convVerticalPrewitt(verticalPrewitt);
     Convolution convHorizontalSobel(horizontalSobel);
@@ -98,7 +98,7 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
                     p1 = p1 * (180/PI);
                     p2 = p2 * (180/PI);
                     //std::cout << p1 << ", " << p2 << std::endl;
-                    pente.at<float>(y, x) = p1;
+                    pente.at<float>(y, x) = p2;
                     //else pente.at<float>(y, x) = p2;
                     //if(imgV.at<float>(y, x) == imgH.at<float>(y, x)) pente.at<float>(y, x) = 600;
                     //pente.at<float>(y, x) = pente.at<float>(y, x)* (180/PI);
@@ -273,7 +273,6 @@ cv::Mat seuilLoc(const cv::Mat & img, int n){
     return ret;
 }
 
-
 cv::Mat newThin(const cv::Mat & img, const cv::Mat & pente, cv::Mat & hyst){
     cv::Mat ret = hyst.clone();
     for(int i = 1; i < img.rows-1; ++i) {
@@ -354,6 +353,81 @@ cv::Mat makeChain(const cv::Mat & img, const cv::Mat & pente){
 
     return ret;
 }
+
+// Réduit les contours
+void refineContours(cv::Mat & img, bool diagonales, cv::Mat pente) {
+    std::vector<std::vector<float>> verticalRight = { {-1, 1, 0} };
+    std::vector<std::vector<float>> horizontalUp = { {0}, {1}, {-1} };
+    std::vector<std::vector<float>> verticalLeft = { {0, 1, -1} };
+    std::vector<std::vector<float>> horizontalDown = { {-1}, {1}, {0} };
+    std::vector<std::vector<float>> diag1 = { {-1, 0, 0}, {0, 1, 0}, {0, 0, 0} };
+    std::vector<std::vector<float>> diag2 = { {0, 0, -1}, {0, 1, 0}, {0, 0, 0} };
+    
+    Convolution convVR(verticalRight);
+    Convolution convHU(horizontalUp);
+    Convolution convVL(verticalLeft);
+    Convolution convHD(horizontalDown);
+    Convolution convDiag1(diag1);
+    Convolution convDiag2(diag2);
+    
+    int largeurMax = 6;     // Largeur max des contours
+    
+    // On itère selon la largeur max des contours
+    for(int i = 0; i < largeurMax/2; ++i) {
+
+        // 1ère passe : supprime les pixels a droite/dessus
+        img = autoHysteresis(img);  
+        
+        cv::Mat imgVR = img.clone();
+        cv::Mat imgHU = img.clone();
+        
+        convVR.apply(imgVR);
+        convHU.apply(imgHU);
+        
+        for(int y = 0; y < img.rows; ++y) {
+            for(int x = 0; x < img.cols; ++x) {
+                img.at<float>(y, x) = std::max(imgVR.at<float>(y, x), imgHU.at<float>(y, x));
+            }
+        }
+        
+        // 2ème passe : supprime les pixels a gauche/dessous
+        img = autoHysteresis(img);
+        
+        cv::Mat imgVL = img.clone();
+        cv::Mat imgHD = img.clone();
+        
+        convVL.apply(imgVL);
+        convHD.apply(imgHD);
+        
+        for(int y = 0; y < img.rows; ++y) {
+            for(int x = 0; x < img.cols; ++x) {
+                img.at<float>(y, x) = std::max(imgVL.at<float>(y, x), imgHD.at<float>(y, x));
+            }
+        }
+        
+        // 3ème passe : supprime les pixels sur les diagonales
+        if(diagonales) {
+            img = autoHysteresis(img);
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
+                    if(pente.at<float>(y, x) == 210) {  // <-- TODO: Changer la valeur
+                        convDiag1.applyToPixel(img, y, x);
+                    }
+                }
+            }
+            
+            img = autoHysteresis(img);
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
+                    if(pente.at<float>(y, x) == 30) {   // <-- TODO: Changer la valeur
+                        convDiag2.applyToPixel(img, y, x);
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 bool recurNext(const cv::Mat & seuil, const cv::Mat & img, cv::Mat & ret, int i, int j, int dir, int & profondeur){
     if(!(j+1 < ret.cols && i+1 < ret.rows)) return false;
@@ -581,3 +655,24 @@ cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente, const cv::Mat &
 
     return ret;
 }
+
+
+// Supprime les pixels solitaires
+void suppressAlonePixels(cv::Mat img) {
+    cv::Mat temp = img.clone();
+
+    for(int y = 0; y < img.rows; ++y) {
+        for(int x = 0; x < img.cols; ++x) {
+        
+            if(!hasNeighbor(img, 254, x, y)) {
+                
+                img.at<float>(y, x) = 0;            
+            }
+            
+        
+        }
+    }
+    
+    img = temp;
+}
+

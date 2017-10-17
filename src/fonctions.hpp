@@ -27,6 +27,12 @@ bool hasNeighbor(const cv::Mat & img, float seuil, unsigned int x, unsigned int 
 // Applique l'hystérésis sur une image en niveaux de gris
 cv::Mat hysteresis(const cv::Mat & img, float seuilBas = 5, float seuilHaut = 10);
 
+// Réduit les contours
+void refineContours(cv::Mat & img, bool diagonales = false, cv::Mat pente = cv::Mat());
+
+// Supprime les pixels solitaires
+void suppressAlonePixels(cv::Mat img);
+
 //seuillage auto d'apres l'ecart type
 cv::Mat autoHysteresis(const cv::Mat & img);
 
@@ -39,10 +45,9 @@ cv::Mat seuilLoc(const cv::Mat & img,int n=3);
 // Calcule une orientation générale du gradian
 void computePenteRange(cv::Mat & rawPente);
 
+cv::Mat makeChain(const cv::Mat & img, const cv::Mat & pente);
 
 cv::Mat newThin(const cv::Mat & img, const cv::Mat & pente, cv::Mat & hyst);
-
-cv::Mat makeChain(const cv::Mat & img, const cv::Mat & pente);
 
 cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente, const cv::Mat & base);
 
