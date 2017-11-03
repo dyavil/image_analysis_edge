@@ -8,7 +8,7 @@
 class Convolution {
     
 public:
-    // Constrcuteur
+    // Constructeur
     Convolution(std::vector<std::vector<float>> filter);
 
     // Applique la convolution a une image

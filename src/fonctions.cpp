@@ -93,9 +93,9 @@ void detectContours(cv::Mat & img, cv::Mat & pente, Filter method) {
                     else {
                         pente.at<float>(y, x) = (atan2(imgH.at<float>(y, x), imgV.at<float>(y, x)));
                     }*/
-                    float p1 = (atan2(imgH.at<float>(y, x), imgV.at<float>(y, x)));
+                    //float p1 = (atan2(imgH.at<float>(y, x), imgV.at<float>(y, x)));
                     float p2 = (atan2(imgV.at<float>(y, x), imgH.at<float>(y, x)));
-                    p1 = p1 * (180/PI);
+                    //p1 = p1 * (180/PI);
                     p2 = p2 * (180/PI);
                     //std::cout << p1 << ", " << p2 << std::endl;
                     pente.at<float>(y, x) = p2;
@@ -176,7 +176,7 @@ void getRangeVal(float angle){
 bool hasNeighbor(const cv::Mat & img, float seuil, unsigned int x, unsigned int y) {
     for(int i = -1; i < 2; ++i){
         for(int j = -1; j < 2; ++j){
-            if(0 <= x+i && x+i < img.cols && 0 <= y+j && y+j < img.rows) {
+            if(0 <= x+i && x+i < img.rows && 0 <= y+j && y+j < img.cols) {
                 if(!(i == 0 && j == 0)){
                     if(img.at<float>(x+i, y+j) > seuil){
                         return true;
@@ -191,7 +191,7 @@ bool hasNeighbor(const cv::Mat & img, float seuil, unsigned int x, unsigned int 
 
 
 // Applique l'hystérésis sur une image en niveaux de gris
-cv::Mat hysteresis(const cv::Mat & img, float seuilBas, float seuilHaut) {
+cv::Mat hysteresisS(const cv::Mat & img, float seuilBas, float seuilHaut) {
     if(seuilBas > seuilHaut) {
         std::cout << "Filtre bas inférieur au filtre haut" << std::endl;
         std::exit(1);
@@ -223,7 +223,7 @@ cv::Mat autoHysteresis(const cv::Mat & img){
     cv::Mat mean, deviation;
     cv::Mat ret = img.clone();
     meanStdDev(img, mean, deviation);
-    ret = hysteresis(img, deviation.at<double>(0, 0), deviation.at<double>(0, 0)+30);
+    ret = hysteresisS(img, deviation.at<double>(0, 0), deviation.at<double>(0, 0)+30);
     return ret;
 }
 
@@ -574,7 +574,7 @@ bool recurNext(const cv::Mat & seuil, const cv::Mat & img, cv::Mat & ret, int i,
         } 
     }
 
-    if(!(ijnext+1 < ret.cols && iinext+1 < ret.rows) || next < 15) return false;
+    if(!(ijnext+1 < ret.cols && iinext+1 < ret.rows && ijnext > 0 && iinext > 0) || next < 15) return false;
     float s1 = seuil.at<float>(iinext-1, ijnext-1);
     float s2 = seuil.at<float>(iinext-1, ijnext);
     float s3 = seuil.at<float>(iinext-1, ijnext+1);
@@ -596,28 +596,13 @@ bool recurNext(const cv::Mat & seuil, const cv::Mat & img, cv::Mat & ret, int i,
     return false;
 }
 
+
 cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente, const cv::Mat & base){
     cv::Mat ret = img.clone();
     for(int i = 1; i < img.rows-1; ++i) {
         for(int j = 1; j < img.cols-1; ++j) {
             if(img.at<float>(i, j)  == 255){
                 //valeur voisins
-                float n1 = img.at<float>(i-1, j-1);
-                float n2 = img.at<float>(i-1, j);
-                float n3 = img.at<float>(i-1, j+1);
-                float n4 = img.at<float>(i, j-1);
-                float n5 = img.at<float>(i, j+1);
-                float n6 = img.at<float>(i+1, j-1);
-                float n7 = img.at<float>(i+1, j);
-                float n8 = img.at<float>(i+1, j+1);
-                float b1 = base.at<float>(i-1, j-1);
-                float b2 = base.at<float>(i-1, j);
-                float b3 = base.at<float>(i-1, j+1);
-                float b4 = base.at<float>(i, j-1);
-                float b5 = base.at<float>(i, j+1);
-                float b6 = base.at<float>(i+1, j-1);
-                float b7 = base.at<float>(i+1, j);
-                float b8 = base.at<float>(i+1, j+1);
 
                 //valeur locales
                 float plocal = pente.at<float>(i, j);
@@ -626,24 +611,7 @@ cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente, const cv::Mat &
 
                 int p = 0;
                 recurNext(img, base, ret, i, j, plocal, p);
-                if(plocal == 60){
-                    //check n1, n2, n3
-                }else if(plocal == 90){
-                    //check n2, n3, n5
-                }else if(plocal == 120){
-                    //check n3 n5 n8
-                }
-                else if(plocal == 150){
-                    //check n5 n8 n7
-                }else if(plocal == 180){
-                    //check n6, n7, n8
-                }else if(plocal == 210){
-                    //check n4 n6 n7
-                }else if(plocal == 10){
-                    //check n1 n4 n6
-                }else if(plocal == 30){
-                    //check n4 n1 n2
-                }
+
             }
         }
     }
@@ -658,21 +626,236 @@ cv::Mat fillContours(const cv::Mat & img, const cv::Mat & pente, const cv::Mat &
 
 
 // Supprime les pixels solitaires
-void suppressAlonePixels(cv::Mat img) {
+void suppressAlonePixels(cv::Mat & img) {
     cv::Mat temp = img.clone();
-
+    int count = 0;
     for(int y = 0; y < img.rows; ++y) {
         for(int x = 0; x < img.cols; ++x) {
-        
-            if(!hasNeighbor(img, 254, x, y)) {
-                
-                img.at<float>(y, x) = 0;            
+            if(temp.at<float>(y, x) != 0){
+
+                if(!hasNeighbor(img, 200, y, x)) {
+                    
+                    temp.at<float>(y, x) = 0; 
+                    count++;        
+                }
             }
-            
-        
+       
         }
     }
-    
-    img = temp;
+    std::cout << count << std::endl;
+    img = temp.clone();
 }
 
+
+cv::Mat showGradient(const cv::Mat & img){
+    cv::Mat ret = cv::Mat::ones(img.rows, img.cols, CV_32FC3);
+
+    cv::Mat mean, deviation;
+    meanStdDev(img, mean, deviation);
+    double val = deviation.at<double>(0, 0);
+    for(int y = 0; y < img.rows; ++y) {
+        for(int x = 0; x < img.cols; ++x) {
+            float b, g, r;
+            float plocal = img.at<float>(y, x);
+            if(plocal > 0 && plocal < 32){
+                g = 0.0;
+                r = 180;
+                b =0.0;
+            }else if(plocal >= 32 && plocal < 64){
+                g = 80.0;
+                r = 80;
+                b =0.0;
+            }else if(plocal >= 64 && plocal < 92){
+                g = 180.0;
+                r = 0;
+                b =0.0;
+            }else if(plocal >= 92 && plocal < 121){
+                g = 80.0;
+                r = 0;
+                b = 80.0;
+            }else if(plocal >= 121 && plocal < 152){
+                g = 0.0;
+                r = 0;
+                b = 180.0;
+            }else if(plocal >= 152 && plocal < 184){
+                g = 80.0;
+                r = 80;
+                b = 80.0;
+            }else if(plocal >= 184 && plocal < 216){
+                g = 10.0;
+                r = 100;
+                b =10.0;
+            }else if(plocal >= 216){
+                g = 100.0;
+                r = 10;
+                b =100.0;
+            }
+            if(img.at<float>(y, x) > val) ret.at<cv::Vec3f>(y, x) = cv::Vec3f(b, g, r);
+
+        }
+    }
+
+    return ret;
+}
+
+
+cv::Mat showPente(const cv::Mat & img, const cv::Mat & pente){
+    cv::Mat ret = cv::Mat::ones(img.rows, img.cols, CV_32FC3);
+    cv::Mat mean, deviation;
+    meanStdDev(img, mean, deviation);
+    double val = deviation.at<double>(0, 0);
+    for(int y = 0; y < img.rows; ++y) {
+        for(int x = 0; x < img.cols; ++x) {
+            float b, g, r;
+            float plocal = pente.at<float>(y, x);
+            if(plocal == 10){
+                r = 0.0;
+                g = 180;
+                b =0.0;
+            }else if(plocal == 30){
+                r = 80.0;
+                g = 80;
+                b =0.0;
+            }else if(plocal == 60){
+                r = 180.0;
+                g = 0;
+                b =0.0;
+            }else if(plocal == 90){
+                r = 80.0;
+                g = 0;
+                b = 80.0;
+            }else if(plocal == 120){
+                r = 0.0;
+                g = 0;
+                b = 180.0;
+            }else if(plocal == 150){
+                r = 80.0;
+                g = 80;
+                b = 80.0;
+            }else if(plocal == 180){
+                r = 10.0;
+                g = 100;
+                b =10.0;
+            }else if(plocal == 210){
+                r = 100.0;
+                g = 10;
+                b =100.0;
+            }
+            if(img.at<float>(y, x) > val) ret.at<cv::Vec3f>(y, x) = cv::Vec3f(b, g, r);
+
+        }
+    }
+    return ret;
+}
+
+////////////////////////////////////////////////////
+
+void detectContoursMulti(cv::Mat & img, cv::Mat & pente, Filter method) {
+    int nbChannels = img.channels();
+    cv::Mat imgH = img.clone();
+    cv::Mat imgV = img.clone();
+    cv::Mat imgHI = img.clone();
+    cv::Mat imgVI = img.clone();
+    cv::Mat imgUL = img.clone();
+    cv::Mat imgUR = img.clone();
+    cv::Mat imgDR = img.clone();
+    cv::Mat imgDL = img.clone();
+    pente = cv::Mat::ones(img.rows, img.cols, CV_32FC1);
+
+    // TODO : Ré-ajouter les fontions thin de Livaï /!\
+
+    // Filtres de Prewitt
+    std::vector<std::vector<float>> horizontalPrewitt = { {1, 1, 1}, {0, 0, 0}, {-1, -1, -1} };
+    std::vector<std::vector<float>> horizontalPrewittInv = { {-1, -1, -1}, {0, 0, 0}, {1, 1, 1} };
+    std::vector<std::vector<float>> diagUpLeftPrewitt = { {1, 1, 0}, {1, 0, -1}, {0, -1, -1} };
+    std::vector<std::vector<float>> diagUpRightPrewitt = { {0, 1, 1}, {-1, 0, 1}, {-1, -1, 0} };
+    std::vector<std::vector<float>> diagDownRightPrewitt = { {-1, -1, 0}, {-1, 0, 1}, {0, 1, 1} };
+    std::vector<std::vector<float>> diagDownLeftPrewitt = { {0, -1, -1}, {1, 0, -1}, {1, 1, 0} };
+    std::vector<std::vector<float>> verticalPrewitt = { {-1, 0, 1}, {-1, 0, 1}, {-1, 0, 1} };
+    std::vector<std::vector<float>> verticalPrewittInv = { {1, 0, -1}, {1, 0, -1}, {1, 0, -1} };
+
+
+    // Convolutions
+    Convolution convHorizontalPrewitt(horizontalPrewitt);
+    Convolution convHorizontalPrewittInv(horizontalPrewittInv);
+    Convolution convVerticalPrewitt(verticalPrewitt);
+    Convolution convVerticalPrewittInv(verticalPrewittInv);
+    Convolution convdiagUpLeftPrewitt(diagUpLeftPrewitt);
+    Convolution convdiagUpRightPrewitt(diagUpRightPrewitt);
+    Convolution convdiagDownRightPrewitt(diagDownRightPrewitt);
+    Convolution convdiagDownLeftPrewitt(diagDownLeftPrewitt);
+
+
+    convHorizontalPrewitt.apply(imgH);
+    convVerticalPrewitt.apply(imgV);
+    convHorizontalPrewittInv.apply(imgHI);
+    convVerticalPrewittInv.apply(imgVI);
+    convdiagUpLeftPrewitt.apply(imgUL);
+    convdiagUpRightPrewitt.apply(imgUR);
+    convdiagDownRightPrewitt.apply(imgDR);
+    convdiagDownLeftPrewitt.apply(imgDL);
+
+
+    // Fusion des 2 images obtenues
+    switch(nbChannels) {
+        case 1: {
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
+                    float maxI = imgH.at<float>(y, x);
+                    int idMax = 10;
+                    if(imgV.at<float>(y, x) > maxI){
+                        maxI = imgV.at<float>(y, x);
+                        idMax = 60;
+                    }
+                    if(imgHI.at<float>(y, x) > maxI){
+                        maxI = imgHI.at<float>(y, x);
+                        idMax = 120;
+                    }
+                    if(imgVI.at<float>(y, x) > maxI){
+                        maxI = imgVI.at<float>(y, x);
+                        idMax = 180;
+                    }
+                    if(imgUL.at<float>(y, x) > maxI){
+                        maxI = imgUL.at<float>(y, x);
+                        idMax = 210;
+                    }
+                    if(imgUR.at<float>(y, x) > maxI){
+                        maxI = imgUR.at<float>(y, x);
+                        idMax = 30;
+                    }if(imgDR.at<float>(y, x) > maxI){
+                        maxI = imgDR.at<float>(y, x);
+                        idMax = 90;
+                    }
+                    if(imgDL.at<float>(y, x) > maxI){
+                        maxI = imgDL.at<float>(y, x);
+                        idMax = 150;
+                    }
+                    img.at<float>(y, x) = maxI;
+                    pente.at<float>(y, x) = idMax;
+
+                }
+            }
+            break;
+        }
+        case 2: {
+            // Not implemented
+            break;
+        }
+        default: {
+
+            for(int y = 0; y < img.rows; ++y) {
+                for(int x = 0; x < img.cols; ++x) {
+                    cv::Vec3f pixV = imgV.at<cv::Vec3f>(y, x);
+                    cv::Vec3f pixH = imgH.at<cv::Vec3f>(y, x);
+
+                    float blue = sqrt(pixV.val[0]*pixV.val[0] + pixH.val[0]*pixH.val[0]);
+                    float green = sqrt(pixV.val[1]*pixV.val[1] + pixH.val[1]*pixH.val[1]);
+                    float red = sqrt(pixV.val[2]*pixV.val[2] + pixH.val[2]*pixH.val[2]);
+
+                    img.at<cv::Vec3f>(y, x) = cv::Vec3f(blue, green, red);
+                }
+            }
+            break;
+        }
+    }
+}
